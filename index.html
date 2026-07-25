@@ -57,6 +57,9 @@
         <button onclick="switchTab('calendar')" id="nav-calendar" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition">
           <i class="fa-solid fa-calendar-days w-5"></i> 동아리 스케줄
         </button>
+        <button onclick="switchTab('qna')" id="nav-qna" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition">
+          <i class="fa-solid fa-circle-question w-5 text-amber-400"></i> Q&A 문의하기
+        </button>
       </nav>
     </div>
 
@@ -79,6 +82,7 @@
     <button onclick="switchTab('history')" id="mob-nav-history" class="mob-nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition">컨텐츠기록</button>
     <button onclick="switchTab('weekly')" id="mob-nav-weekly" class="mob-nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition">주간스진동</button>
     <button onclick="switchTab('calendar')" id="mob-nav-calendar" class="mob-nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition">스케줄</button>
+    <button onclick="switchTab('qna')" id="mob-nav-qna" class="mob-nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition">Q&A</button>
   </div>
 
   <!-- MAIN VIEW -->
@@ -98,7 +102,7 @@
 
     <main class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8">
 
-      <!-- BANNER HERO (업데이트된 영구 타이틀 이미지 적용) -->
+      <!-- BANNER HERO -->
       <div id="hero-banner" class="w-full dash-card p-4 sm:p-6 rounded-2xl flex items-center justify-center overflow-hidden">
         <img src="https://raw.githubusercontent.com/ChzzkHarm0ny/SZD/refs/heads/main/images/20251231.png" 
              alt="스진동 메인 타이틀" class="w-full max-w-4xl h-auto object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
@@ -189,6 +193,58 @@
         </div>
       </div>
 
+      <!-- TAB 6: Q&A 문의하기 (1:1 문의 폼) -->
+      <div id="tab-qna" class="tab-content hidden space-y-6 max-w-2xl mx-auto">
+        <div class="dash-card p-6 rounded-2xl border-l-4 border-l-amber-500 space-y-2">
+          <h3 class="text-xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-circle-question text-amber-400"></i> 스진동 1:1 문의 / Q&A
+          </h3>
+          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            동아리 관련 궁금한 점이나 건의사항을 남겨주세요. 개인적으로 답변이 필요하신 분은 연락처를 꼭 남겨주시기 바랍니다.
+          </p>
+        </div>
+
+        <div class="dash-card p-6 sm:p-8 rounded-2xl space-y-6">
+          <form id="qna-form" onsubmit="submitQnA(event)" class="space-y-5">
+            
+            <!-- 작성자 및 익명 체크박스 -->
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <label class="text-xs font-bold text-slate-300">작성자 / 닉네임</label>
+                <label class="flex items-center gap-1.5 text-xs text-amber-400 cursor-pointer font-medium">
+                  <input type="checkbox" id="qna-is-anonymous" onchange="toggleAnonymous(this)" class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0"> 익명으로 작성
+                </label>
+              </div>
+              <input type="text" id="qna-writer" placeholder="닉네임 또는 이름을 입력하세요 (미입력시 익명)" 
+                     class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition">
+            </div>
+
+            <!-- 연락처 (선택사항) -->
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-slate-300 flex items-center justify-between">
+                <span>답변받을 연락처 <span class="text-slate-500 font-normal">(선택사항)</span></span>
+                <span class="text-[11px] text-slate-500">이메일, 치지직 ID, 오픈채팅방 링크 등</span>
+              </label>
+              <input type="text" id="qna-contact" placeholder="예: chzzk_master 또는 이메일 주소" 
+                     class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition">
+            </div>
+
+            <!-- 문의 내용 -->
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-slate-300">문의 내용 <span class="text-red-400">*</span></label>
+              <textarea id="qna-content" rows="5" required placeholder="문의하실 내용을 자유롭게 적어주세요." 
+                        class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition resize-none"></textarea>
+            </div>
+
+            <!-- 제출 버튼 -->
+            <button type="submit" id="qna-submit-btn" 
+                    class="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane"></i> 문의 내용 전송하기
+            </button>
+          </form>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -208,6 +264,9 @@
   <script>
     const SPREADSHEET_ID = "1mBhZxpmt7xw8fC37cRjSaVQBSQkPXdskJNK9u1Zg_Co";
     
+    // 💡 아래 주소는 구글 앱스 스크립트(Google Apps Script)를 배포한 뒤 발급받는 웹 앱 URL로 나중에 변경해주셔야 합니다!
+    const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
+
     const RACE_ICONS = {
       terran: "https://raw.githubusercontent.com/ChzzkHarm0ny/SZD/refs/heads/main/images/테란마크.webp",
       zerg: "https://raw.githubusercontent.com/ChzzkHarm0ny/SZD/refs/heads/main/images/저그마크.webp",
@@ -255,6 +314,75 @@
         renderCalendar();
         renderLiveStatusFromSheet();
       } catch (e) { console.error("Data Load Error:", e); }
+    }
+
+    // 익명 체크박스 핸들러
+    function toggleAnonymous(checkbox) {
+      const writerInput = document.getElementById('qna-writer');
+      if (checkbox.checked) {
+        writerInput.value = '익명';
+        writerInput.disabled = true;
+        writerInput.classList.add('opacity-50');
+      } else {
+        writerInput.value = '';
+        writerInput.disabled = false;
+        writerInput.classList.remove('opacity-50');
+      }
+    }
+
+    // Q&A 폼 전송 함수
+    async function submitQnA(event) {
+      event.preventDefault();
+
+      const writerInput = document.getElementById('qna-writer');
+      const isAnonymous = document.getElementById('qna-is-anonymous').checked;
+      let writer = writerInput.value.trim();
+      if (isAnonymous || !writer) {
+        writer = '익명';
+      }
+
+      const contact = document.getElementById('qna-contact').value.trim() || '없음';
+      const content = document.getElementById('qna-content').value.trim();
+
+      if (!content) {
+        alert('문의 내용을 입력해주세요.');
+        return;
+      }
+
+      if (GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
+        alert('구글 앱스 스크립트(Google Apps Script) URL이 아직 설정되지 않았습니다! 잠시 후 안내해 드릴 연동 코드를 먼저 설정해 주세요.');
+        return;
+      }
+
+      const submitBtn = document.getElementById('qna-submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 전송 중...`;
+
+      const id = Date.now().toString();
+      const now = new Date();
+      const date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+      const formData = { id, date, writer, content, contact };
+
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        alert('문의사항이 성공적으로 접수되었습니다. 감사합니다!');
+        document.getElementById('qna-form').reset();
+        document.getElementById('qna-writer').disabled = false;
+        document.getElementById('qna-writer').classList.remove('opacity-50');
+      } catch (e) {
+        console.error('Q&A Submit Error:', e);
+        alert('전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> 문의 내용 전송하기`;
+      }
     }
 
     function getProfileImgUrl(name, customImg) {
@@ -498,7 +626,7 @@
         heroBanner.classList.add('hidden');
       }
 
-      const titles = { main: '메인 대시보드', members: '동아리 소개', history: '컨텐츠 기록', weekly: '주간스진동', calendar: '동아리 스케줄' };
+      const titles = { main: '메인 대시보드', members: '동아리 소개', history: '컨텐츠 기록', weekly: '주간스진동', calendar: '동아리 스케줄', qna: 'Q&A 문의하기' };
       document.getElementById('page-title').innerText = titles[id] || '스진동';
     }
 
