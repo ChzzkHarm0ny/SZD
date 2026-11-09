@@ -26,6 +26,61 @@
     .race-terran-text { color: #60a5fa !important; }
     .race-protoss-text { color: #f59e0b !important; }
     .race-zerg-text { color: #ef4444 !important; }
+
+
+    /* 스진동 리그: 예시 이미지의 네이비 / 골드 테이블을 캐릭터 없이 재구성 */
+    .league-board {
+      position: relative; isolation: isolate; overflow: hidden;
+      background: radial-gradient(ellipse at 50% -25%, #27436b 0%, #101b31 46%, #090f1d 100%);
+      border: 2px solid #e4a733; border-radius: 28px;
+      box-shadow: 0 0 0 3px rgba(108,65,15,.28), 0 0 35px rgba(255,180,35,.20), inset 0 0 28px rgba(6,12,26,.85);
+    }
+    .league-board::before {
+      content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+      background: radial-gradient(circle at 6% 10%,rgba(80,50,156,.32),transparent 26%),radial-gradient(circle at 95% 4%,rgba(253,164,29,.17),transparent 27%);
+    }
+    .league-head { text-align:center; padding: 26px 18px 15px; }
+    /* 기존 네이비 배경과 골드 테두리 안에서 타이틀 이미지만 표시 */
+    .league-banner-image {
+      display:block;
+      width:100%;
+      max-width:360px;
+      height:auto;
+      margin:0 auto;
+      object-fit:contain;
+      filter:drop-shadow(0 8px 12px rgba(0,0,0,.5));
+    }
+    .league-table-wrap { padding:12px 16px 22px; overflow-x:auto; }
+    .league-rank-table { width:100%; min-width:510px; border-collapse:separate; border-spacing:0 6px; text-align:center; table-layout:fixed; }
+    .league-rank-table th { background:#09182f; color:#fff8df; padding:11px 8px; font-size:clamp(14px,2vw,22px); text-shadow:1px 2px 2px #000; border-bottom:2px solid #c39140; }
+    .league-rank-table th + th { border-left:1px solid #b88e3d; }
+    .league-rank-table th:first-child { border-radius:13px 0 0 13px; }
+    .league-rank-table th:last-child { border-radius:0 13px 13px 0; }
+    .league-rank-table td { height:53px; padding:6px 10px; font-size:clamp(14px,2vw,22px); font-weight:900; color:#fbfbff; text-shadow:0 2px 2px #030814; background:linear-gradient(180deg,#152338,#0b1425 80%); border-top:1px solid #33435d; border-bottom:1px solid #28384e; }
+    .league-rank-table td:first-child { border-radius:24px 0 0 24px; border-left:1px solid #39475e; }
+    .league-rank-table td:last-child { border-radius:0 24px 24px 0; border-right:1px solid #39475e; }
+    .league-rank-table .league-row-first td { background:linear-gradient(180deg,#d89809,#82500b 70%,#63420d); border-color:#ffda66; box-shadow:inset 0 0 12px rgba(255,225,86,.28),0 0 12px rgba(249,175,30,.22); }
+    .league-rank-table .league-row-second td { background:linear-gradient(180deg,#8da6ca,#435875 65%,#32445c); border-color:#bfdbff; box-shadow:inset 0 0 10px rgba(239,250,255,.25); }
+    .league-rank-table .league-row-third td { background:linear-gradient(180deg,#d68a27,#95501c 67%,#693a1d); border-color:#f7ad5a; box-shadow:inset 0 0 10px rgba(255,199,125,.20); }
+    .league-rank-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .league-rank-number { display:inline-flex; justify-content:center; align-items:center; width:38px; height:38px; font-weight:1000; border-radius:11px; border:2px solid #677d9a; background:#132139; box-shadow:0 2px 4px rgba(0,0,0,.3); }
+    .league-row-first .league-rank-number { color:#442700; background:linear-gradient(#fff8aa,#e4a61e); border-color:#fff1a5; text-shadow:none; }
+    .league-row-second .league-rank-number { color:#223047; background:linear-gradient(#f8fbff,#a8c0da); border-color:#ecf6ff; text-shadow:none; }
+    .league-row-third .league-rank-number { color:#47230d; background:linear-gradient(#ffd9a6,#bb6e26); border-color:#ffca87; text-shadow:none; }
+    .league-medal { display:inline-flex; gap:5px; align-items:center; }
+    .league-rank-table .league-points { color:#ffdc5c; font-size:clamp(18px,2.3vw,28px); -webkit-text-stroke:.4px #643c0a; }
+    .league-empty-note { color:#b1c1d8; font-size:12px; text-align:center; padding:0 12px 18px; }
+    .league-leader-card { border:1px solid rgba(230,175,64,.27); background:linear-gradient(125deg,rgba(40,52,76,.94),rgba(10,17,30,.96)); border-radius:18px; padding:19px 21px; }
+    .league-day-card { border:1px solid #334155; background:linear-gradient(180deg,rgba(27,39,61,.9),rgba(12,19,32,.92)); border-radius:16px; padding:12px; min-height:148px; }
+    .league-day-card.league-today { border-color:#edb43f; box-shadow:0 0 0 1px rgba(237,180,63,.4),inset 0 0 16px rgba(237,180,63,.07); }
+    .league-match-card { border:1px solid #344562; border-radius:11px; background:rgba(3,11,28,.73); padding:9px; }
+    .league-match-card.league-match-done { border-color:rgba(251,191,36,.45); }
+    @media (max-width:640px) {
+      .league-head { padding-top:23px; }
+      .league-rank-table th { font-size:15px; }
+      .league-table-wrap { padding:9px 9px 17px; }
+      .league-subtitle { padding-left:29px; padding-right:29px; }
+    }
   </style>
 </head>
 <body class="flex flex-col md:flex-row h-screen overflow-hidden">
@@ -54,6 +109,9 @@
         <button onclick="switchTab('weekly')" id="nav-weekly" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition">
           <i class="fa-brands fa-youtube w-5 text-red-500"></i> 주간스진동
         </button>
+        <button onclick="switchTab('league')" id="nav-league" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition">
+          <i class="fa-solid fa-trophy w-5 text-amber-400"></i> 스진동 리그
+        </button>
         <button onclick="switchTab('calendar')" id="nav-calendar" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition">
           <i class="fa-solid fa-calendar-days w-5"></i> 동아리 스케줄
         </button>
@@ -81,6 +139,7 @@
     <button onclick="switchTab('members')" id="mob-nav-members" class="mob-nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition">동아리소개</button>
     <button onclick="switchTab('history')" id="mob-nav-history" class="mob-nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition">컨텐츠기록</button>
     <button onclick="switchTab('weekly')" id="mob-nav-weekly" class="mob-nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition">주간스진동</button>
+    <button onclick="switchTab('league')" id="mob-nav-league" class="mob-nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition">🏆 리그</button>
     <button onclick="switchTab('calendar')" id="mob-nav-calendar" class="mob-nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition">스케줄</button>
     <button onclick="switchTab('qna')" id="mob-nav-qna" class="mob-nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition">Q&A</button>
   </div>
@@ -174,6 +233,44 @@
         <div id="weekly-youtube-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <div class="col-span-full dash-card p-8 text-center text-slate-400 rounded-2xl">영상을 불러오는 중입니다...</div>
         </div>
+      </div>
+
+      <!-- TAB: 스진동 리그. 데이터 원본은 같은 구글시트의 LEAGUE 탭 -->
+      <div id="tab-league" class="tab-content hidden space-y-7">
+        <section aria-label="스진동 리그 순위표" class="league-board">
+          <div class="league-head">
+            <img class="league-banner-image"
+                 src="https://raw.githubusercontent.com/ChzzkHarm0ny/SZD/refs/heads/main/images/%EB%B0%B0%EB%84%88.png"
+                 alt="스진동 LEAGUE 순위표" decoding="async">
+          </div>
+          <div class="league-table-wrap">
+            <table class="league-rank-table" aria-label="스진동 리그 실시간 순위">
+              <colgroup><col style="width:14%"><col style="width:43%"><col style="width:12%"><col style="width:12%"><col style="width:19%"></colgroup>
+              <thead><tr><th scope="col">순위</th><th scope="col">이름</th><th scope="col">승</th><th scope="col">패</th><th scope="col">승점</th></tr></thead>
+              <tbody id="league-standings-body"><tr><td colspan="5">순위표를 불러오는 중입니다...</td></tr></tbody>
+            </table>
+          </div>
+          <p class="league-empty-note" id="league-points-note">승리 3점 · 패배 1점 · 미진행 경기 0점</p>
+        </section>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="league-leader-cards" aria-label="리그 주요 기록"></div>
+        <div id="league-data-notice" class="hidden text-xs leading-6 text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3" role="status"></div>
+
+        <section class="space-y-4" aria-label="주간 리그 일정">
+          <div class="flex flex-wrap gap-3 items-end justify-between">
+            <div>
+              <h3 class="font-black text-white text-lg sm:text-xl flex items-center gap-2"><i class="fa-regular fa-calendar-days text-amber-400"></i> 이번 주 리그 일정</h3>
+              <p class="text-xs text-slate-400 mt-1" id="league-week-label">일정 읽는 중...</p>
+            </div>
+            <div class="flex gap-2 items-center">
+              <button type="button" onclick="changeLeagueWeek(-1)" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold hover:bg-slate-700" aria-label="이전 주 리그 일정"><i class="fa-solid fa-chevron-left mr-1"></i> 이전 주</button>
+              <button type="button" onclick="changeLeagueWeek(0)" class="px-3 py-2 bg-amber-500/15 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold hover:bg-amber-500/25">이번 주</button>
+              <button type="button" onclick="changeLeagueWeek(1)" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold hover:bg-slate-700" aria-label="다음 주 리그 일정">다음 주 <i class="fa-solid fa-chevron-right ml-1"></i></button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3" id="league-week-grid"></div>
+          <p class="text-xs text-slate-500">홈 · 어웨이는 같은 상대와 서로 장소를 바꾸어 최대 2경기 진행합니다. 시간은 시트에 입력된 경우에만 표시합니다.</p>
+        </section>
       </div>
 
       <!-- TAB 4: CALENDAR -->
@@ -273,7 +370,16 @@
       protoss: "https://raw.githubusercontent.com/ChzzkHarm0ny/SZD/refs/heads/main/images/프로토스마크.webp"
     };
 
-    let db = { members: [], schedules: [], historyMatch: [], weeklyYoutube: [], details: [] };
+    let db = { members: [], schedules: [], historyMatch: [], weeklyYoutube: [], details: [], league: [] };
+    // 예시 순위표에 나온 9명을 0전 참가자로 등록. 시트에서 새 이름을 쓰면 자동 추가됩니다.
+    const LEAGUE_PLAYERS = ['망시', '고라니는똥손', '아모크', '고보미', '카루하', '찬율', '은승아지', '하늘루틴', '엄크술사'];
+    const LEAGUE_SHEET_NAME = 'LEAGUE';
+    // 시트 약칭과 홈페이지 표기명을 하나의 선수로 합산
+    const LEAGUE_NAME_ALIASES = { '고라니': '고라니는똥손' };
+    const LEAGUE_WIN_POINTS = 3;
+    const LEAGUE_LOSS_POINTS = 1;
+    let leagueWeekOffset = 0;
+    let leagueSheetLoaded = false;
     let currentCategoryFilter = 'all';
     let currentCalDate = new Date();
 
@@ -289,6 +395,11 @@
         Papa.parse(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheet}`, {
           download: true, header: true, skipEmptyLines: true, 
           complete: r => {
+            // 헤더만 있는 빈 LEAGUE 시트도 정상 연결로 인식합니다.
+            if (sheet === LEAGUE_SHEET_NAME) {
+              const fields = (r.meta && r.meta.fields || []).map(k => String(k).replace(/^\uFEFF/, '').trim().toUpperCase());
+              leagueSheetLoaded = ['DATE', 'HOME', 'AWAY', 'WINNER'].every(k => fields.includes(k));
+            }
             const validData = (r.data || []).filter(row => {
               const keys = Object.keys(row);
               if (keys.length === 0) return false;
@@ -296,7 +407,8 @@
               return hasContent;
             });
             res(validData);
-          }
+          },
+          error: err => { console.warn(`Sheet ${sheet} could not be loaded`, err); res([]); }
         });
       });
 
@@ -306,6 +418,7 @@
         db.historyMatch = await fetchCSV('Contents_History');
         db.weeklyYoutube = await fetchCSV('WEEKLY_YOUTUBE').catch(() => []);
         db.details = await fetchCSV('Match_Details');
+        db.league = await fetchCSV(LEAGUE_SHEET_NAME);
 
         renderMembers();
         renderWeeklyWidget();
@@ -313,7 +426,214 @@
         renderWeeklyYoutube();
         renderCalendar();
         renderLiveStatusFromSheet();
+        renderLeague();
       } catch (e) { console.error("Data Load Error:", e); }
+    }
+
+
+
+    /* --------------------------------------------------------------
+       LEAGUE : LEAGUE 워크시트 / DATE, HOME, AWAY, WINNER
+       한 줄 = 한 경기. 같은 두 선수는 홈/어웨이를 교환하여 두 경기.
+       WINNER 공란 = 일정만 등록, 승/패/승점에는 아직 반영하지 않음.
+       -------------------------------------------------------------- */
+    function leagueEscape(value) {
+      return String(value === undefined || value === null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function leagueCell(row, name) {
+      const key = Object.keys(row || {}).find(k => k.replace(/^\uFEFF/, '').trim().toUpperCase() === name);
+      return key === undefined ? '' : String(row[key] == null ? '' : row[key]).trim();
+    }
+
+    function leagueDateFromText(value) {
+      const raw = String(value || '').trim();
+      let match = raw.match(/(\d{4})\s*(?:년|[-./])\s*(\d{1,2})\s*(?:월|[-./])\s*(\d{1,2})/);
+      let y, m, d;
+      if (match) {
+        y=Number(match[1]); m=Number(match[2]); d=Number(match[3]);
+      } else {
+        match = raw.match(/^(\d{1,2})\s*[/.-]\s*(\d{1,2})\s*[/.-]\s*(\d{4})/);
+        if (!match) return '';
+        y=Number(match[3]); m=Number(match[1]); d=Number(match[2]);
+      }
+      const result = new Date(Date.UTC(y, m-1, d));
+      if (result.getUTCFullYear() !== y || result.getUTCMonth()+1 !== m || result.getUTCDate() !== d) return '';
+      return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    }
+
+    function leagueSeoulToday() {
+      const pieces = new Intl.DateTimeFormat('en-US', {
+        timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'
+      }).formatToParts(new Date());
+      const part = key => Number(pieces.find(p => p.type === key).value);
+      return new Date(Date.UTC(part('year'), part('month')-1, part('day')));
+    }
+
+    function leagueISODate(utcDate) {
+      return `${utcDate.getUTCFullYear()}-${String(utcDate.getUTCMonth()+1).padStart(2,'0')}-${String(utcDate.getUTCDate()).padStart(2,'0')}`;
+    }
+
+    function leagueNormalizeName(value) {
+      const name = String(value || '').replace(/\s+/g, ' ').trim();
+      return LEAGUE_NAME_ALIASES[name] || name;
+    }
+
+    function leagueRows() {
+      const warnings = [];
+      const result = [];
+      const fixtures = new Set();
+      (db.league || []).forEach((row, idx) => {
+        const dateRaw=leagueCell(row,'DATE');
+        const home=leagueNormalizeName(leagueCell(row,'HOME'));
+        const away=leagueNormalizeName(leagueCell(row,'AWAY'));
+        const winnerRaw=leagueNormalizeName(leagueCell(row,'WINNER'));
+        if (!dateRaw && !home && !away && !winnerRaw) return;
+        const date=leagueDateFromText(dateRaw);
+        const timeRaw=leagueCell(row,'TIME') || dateRaw;
+        const matchTime=String(timeRaw).match(/(?:^|\s|T)([01]?\d|2[0-3]):([0-5]\d)(?:\b|$)/);
+        const time=matchTime ? `${matchTime[1].padStart(2,'0')}:${matchTime[2]}` : '';
+        if (!date || !home || !away || home === away) {
+          warnings.push(`${idx+2}행: 날짜 또는 HOME/AWAY 값이 올바르지 않아 제외했습니다.`);
+          return;
+        }
+        const key=`${home}\u001f${away}`;
+        const duplicate=fixtures.has(key);
+        if (duplicate) warnings.push(`${idx+2}행: ${home} 홈 / ${away} 어웨이 경기가 중복되어 순위 계산에서 제외했습니다.`);
+        fixtures.add(key);
+        let winner='';
+        let invalidWinner=false;
+        if (winnerRaw) {
+          if (winnerRaw === home || ['HOME','홈','H'].includes(winnerRaw.toUpperCase())) winner=home;
+          else if (winnerRaw === away || ['AWAY','어웨이','A'].includes(winnerRaw.toUpperCase())) winner=away;
+          else {
+            invalidWinner=true;
+            warnings.push(`${idx+2}행: WINNER는 HOME 또는 AWAY 선수명과 일치해야 합니다.`);
+          }
+        }
+        result.push({date, time, home, away, winner, invalidWinner, duplicate, index:idx});
+      });
+      return {matches:result, warnings};
+    }
+
+    function leagueStatistics(matches) {
+      const players=new Map();
+      const ensure=name => {
+        if (!players.has(name)) players.set(name, {name, wins:0, losses:0, played:0, points:0, index:players.size});
+        return players.get(name);
+      };
+      LEAGUE_PLAYERS.forEach(ensure);
+      matches.forEach(m => {
+        if (m.duplicate) return;
+        const home=ensure(m.home), away=ensure(m.away);
+        if (!m.winner || m.invalidWinner) return;
+        const winning=m.winner === m.home ? home : away;
+        const losing=m.winner === m.home ? away : home;
+        winning.wins++; losing.losses++; winning.played++; losing.played++;
+        winning.points+=LEAGUE_WIN_POINTS;
+        losing.points+=LEAGUE_LOSS_POINTS;
+      });
+      return [...players.values()].sort((a,b) =>
+        b.points-a.points || b.wins-a.wins || b.played-a.played || a.index-b.index
+      );
+    }
+
+    function renderLeague() {
+      const board=document.getElementById('league-standings-body');
+      if (!board) return;
+      const {matches,warnings}=leagueRows();
+      const players=leagueStatistics(matches);
+      const medals=['fa-crown','fa-medal','fa-award'];
+      board.innerHTML = players.map((p,i)=>{
+        const cls=i===0?'league-row-first':i===1?'league-row-second':i===2?'league-row-third':'';
+        const icon=i<3?`<i class="fa-solid ${medals[i]} text-xs" aria-hidden="true"></i>`:'';
+        return `<tr class="${cls}">
+          <td><span class="league-medal"><span class="league-rank-number">${i+1}</span>${icon}</span></td>
+          <td class="league-rank-name" title="${leagueEscape(p.name)}">${leagueEscape(p.name)}</td>
+          <td>${p.wins}</td><td>${p.losses}</td><td class="league-points">${p.points}</td>
+        </tr>`;
+      }).join('');
+
+      const completed=matches.filter(m => m.winner && !m.duplicate).length;
+      document.getElementById('league-points-note').textContent=
+        `승리 ${LEAGUE_WIN_POINTS}점 · 패배 ${LEAGUE_LOSS_POINTS}점 · 미진행 경기 0점 | 완료 ${completed}경기 / 등록 ${matches.filter(m=>!m.duplicate).length}경기`;
+
+      const maxPoints=Math.max(0,...players.map(p=>p.points));
+      const maxPlayed=Math.max(0,...players.map(p=>p.played));
+      const pointLeaders=maxPlayed?players.filter(p=>p.points===maxPoints):[];
+      const playLeaders=maxPlayed?players.filter(p=>p.played===maxPlayed):[];
+      const nameList=arr=>arr.length?arr.map(p=>leagueEscape(p.name)).join(' · '):'아직 기록 없음';
+      document.getElementById('league-leader-cards').innerHTML = `
+        <div class="league-leader-card flex items-center gap-4">
+          <div class="w-12 h-12 shrink-0 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-400 text-xl"><i class="fa-solid fa-trophy"></i></div>
+          <div class="min-w-0 flex-1"><p class="text-xs font-bold text-amber-300 mb-1">최고 승점 · 리그 선두</p>
+            <p class="text-white text-lg font-black break-words">${nameList(pointLeaders)}</p>
+            <p class="text-slate-400 text-xs mt-1">${pointLeaders.length?`${maxPoints}점`:'결과가 등록되면 자동 표시됩니다.'}</p></div>
+        </div>
+        <div class="league-leader-card flex items-center gap-4">
+          <div class="w-12 h-12 shrink-0 rounded-xl bg-sky-500/15 flex items-center justify-center text-sky-400 text-xl"><i class="fa-solid fa-users"></i></div>
+          <div class="min-w-0 flex-1"><p class="text-xs font-bold text-sky-300 mb-1">최다 참여 · 출전 선두</p>
+            <p class="text-white text-lg font-black break-words">${nameList(playLeaders)}</p>
+            <p class="text-slate-400 text-xs mt-1">${playLeaders.length?`${maxPlayed}경기 출전`:'결과가 등록되면 자동 표시됩니다.'}</p></div>
+        </div>`;
+
+      const notice=document.getElementById('league-data-notice');
+      const errors=[];
+      if (!leagueSheetLoaded) errors.push('기존 구글 스프레드시트에 LEAGUE 탭을 만들고 1행에 DATE, HOME, AWAY, WINNER를 입력하세요. 현재는 실제 경기 기록을 불러오지 못해 기본 참가자만 표시하고 있습니다.');
+      if (warnings.length) errors.push(`입력 확인: ${warnings.length}건. ${warnings.slice(0,3).map(leagueEscape).join(' / ')}${warnings.length>3?' 외':''}`);
+      notice.innerHTML=errors.join('<div class="mt-1"></div>');
+      notice.classList.toggle('hidden',!errors.length);
+      renderLeagueWeek(matches);
+    }
+
+    function changeLeagueWeek(direction) {
+      leagueWeekOffset = direction===0 ? 0 : leagueWeekOffset+direction;
+      renderLeagueWeek(leagueRows().matches);
+    }
+
+    function renderLeagueWeek(matches) {
+      const grid=document.getElementById('league-week-grid');
+      if (!grid) return;
+      const today=leagueSeoulToday();
+      const monday=new Date(today.getTime());
+      monday.setUTCDate(today.getUTCDate()-((today.getUTCDay()+6)%7)+leagueWeekOffset*7);
+      const sunday=new Date(monday.getTime()); sunday.setUTCDate(monday.getUTCDate()+6);
+      const showDate=d=>`${d.getUTCMonth()+1}월 ${d.getUTCDate()}일`;
+      document.getElementById('league-week-label').textContent=
+        `${monday.getUTCFullYear()}년 ${showDate(monday)} ~ ${showDate(sunday)} · 월요일~일요일`;
+      const dayNames=['월','화','수','목','금','토','일'];
+      const nowISO=leagueISODate(today);
+      grid.innerHTML=dayNames.map((day,i)=>{
+        const date=new Date(monday.getTime()); date.setUTCDate(monday.getUTCDate()+i);
+        const iso=leagueISODate(date);
+        const dayMatches=matches.filter(m=>m.date===iso).sort((a,b)=>a.time.localeCompare(b.time)||a.index-b.index);
+        const content=dayMatches.length?dayMatches.map(m=>{
+          const finished=!!m.winner&&!m.duplicate;
+          const bad=m.invalidWinner||m.duplicate;
+          const label=m.duplicate?'중복 편성':m.invalidWinner?'결과 입력 확인':finished?'경기 종료':(iso<nowISO?'결과 대기':'경기 예정');
+          const color=bad?'text-red-300':finished?'text-amber-300':'text-sky-300';
+          return `<div class="league-match-card ${finished?'league-match-done':''} space-y-2">
+            <div class="flex flex-wrap gap-1 justify-between items-center text-[10px] font-bold">
+              <span class="${color}">${finished?'<i class="fa-solid fa-check mr-1"></i>':''}${label}</span>
+              ${m.time?`<span class="text-slate-400">${leagueEscape(m.time)}</span>`:''}
+            </div>
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-1 text-[11px] min-w-0"><span class="w-11 shrink-0 text-[9px] text-emerald-300 font-black">HOME</span><span class="min-w-0 font-bold text-slate-50 break-all ${finished&&m.winner===m.home?'text-amber-300':''}">${leagueEscape(m.home)}</span>${finished&&m.winner===m.home?'<i class="fa-solid fa-crown text-amber-400 text-[10px]"></i>':''}</div>
+              <div class="flex items-center gap-1 text-[11px] min-w-0"><span class="w-11 shrink-0 text-[9px] text-sky-300 font-black">AWAY</span><span class="min-w-0 font-bold text-slate-50 break-all ${finished&&m.winner===m.away?'text-amber-300':''}">${leagueEscape(m.away)}</span>${finished&&m.winner===m.away?'<i class="fa-solid fa-crown text-amber-400 text-[10px]"></i>':''}</div>
+            </div>
+            ${finished?`<div class="text-[10px] text-amber-300 border-t border-slate-700 pt-1.5">승자: <strong>${leagueEscape(m.winner)}</strong></div>`:''}
+          </div>`;
+        }).join(''):'<p class="py-6 text-center text-xs text-slate-500">경기 없음</p>';
+        return `<article class="league-day-card ${iso===nowISO?'league-today':''}">
+          <div class="flex items-center justify-between gap-1 border-b border-slate-700/80 pb-2 mb-3">
+            <span class="font-bold text-sm ${iso===nowISO?'text-amber-300':'text-slate-200'}">${day}요일</span>
+            <span class="text-xs text-slate-400">${date.getUTCMonth()+1}/${date.getUTCDate()}</span>
+          </div>
+          <div class="space-y-2">${content}</div>
+        </article>`;
+      }).join('');
     }
 
     // 익명 체크박스 핸들러
@@ -626,7 +946,7 @@
         heroBanner.classList.add('hidden');
       }
 
-      const titles = { main: '메인 대시보드', members: '동아리 소개', history: '컨텐츠 기록', weekly: '주간스진동', calendar: '동아리 스케줄', qna: 'Q&A 문의하기' };
+      const titles = { main: '메인 대시보드', members: '동아리 소개', history: '컨텐츠 기록', weekly: '주간스진동', league: '스진동 리그', calendar: '동아리 스케줄', qna: 'Q&A 문의하기' };
       document.getElementById('page-title').innerText = titles[id] || '스진동';
     }
 
