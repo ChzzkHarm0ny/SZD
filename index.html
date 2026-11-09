@@ -372,10 +372,10 @@
 
     let db = { members: [], schedules: [], historyMatch: [], weeklyYoutube: [], details: [], league: [] };
     // 예시 순위표에 나온 9명을 0전 참가자로 등록. 시트에서 새 이름을 쓰면 자동 추가됩니다.
-    const LEAGUE_PLAYERS = ['망시', '고라니는똥손', '아모크', '고보미', '카루하', '찬율', '은승아지', '하늘루틴', '엄크술사'];
+    const LEAGUE_PLAYERS = ['망시', '고라니는똥손', '아모크', '고보미', '카루하', '찬울', '은송아지', '하늘루틴', '엄크술사'];
     const LEAGUE_SHEET_NAME = 'LEAGUE';
     // 시트 약칭과 홈페이지 표기명을 하나의 선수로 합산
-    const LEAGUE_NAME_ALIASES = { '고라니': '고라니는똥손' };
+    const LEAGUE_NAME_ALIASES = { '고라니': '고라니는똥손', '찬율': '찬울', '은승아지': '은송아지' };
     const LEAGUE_WIN_POINTS = 3;
     const LEAGUE_LOSS_POINTS = 1;
     let leagueWeekOffset = 0;
@@ -490,13 +490,16 @@
         const home=leagueNormalizeName(leagueCell(row,'HOME'));
         const away=leagueNormalizeName(leagueCell(row,'AWAY'));
         const winnerRaw=leagueNormalizeName(leagueCell(row,'WINNER'));
-        if (!dateRaw && !home && !away && !winnerRaw) return;
+        // 날짜만 기재된 행, 빈 행, 입력 도중인 행은 조용히 건너뜁니다.
+        // DATE / HOME / AWAY가 모두 있을 때에만 경기를 일정에 등록합니다.
+        // WINNER는 비어 있어도 정상적인 예정 경기입니다.
+        if (!dateRaw || !home || !away) return;
         const date=leagueDateFromText(dateRaw);
         const timeRaw=leagueCell(row,'TIME') || dateRaw;
         const matchTime=String(timeRaw).match(/(?:^|\s|T)([01]?\d|2[0-3]):([0-5]\d)(?:\b|$)/);
         const time=matchTime ? `${matchTime[1].padStart(2,'0')}:${matchTime[2]}` : '';
-        if (!date || !home || !away || home === away) {
-          warnings.push(`${idx+2}행: 날짜 또는 HOME/AWAY 값이 올바르지 않아 제외했습니다.`);
+        if (!date || home === away) {
+          warnings.push(`${idx+2}행: 날짜가 잘못되었거나 HOME과 AWAY가 같은 선수입니다.`);
           return;
         }
         const key=`${home}\u001f${away}`;
@@ -526,9 +529,10 @@
       };
       LEAGUE_PLAYERS.forEach(ensure);
       matches.forEach(m => {
-        if (m.duplicate) return;
+        // 결과가 입력된 정상 경기만 승패·승점·참여 횟수에 반영합니다.
+        // 결과가 없는 예정 경기는 하단 주간 일정에만 표시합니다.
+        if (m.duplicate || !m.winner || m.invalidWinner) return;
         const home=ensure(m.home), away=ensure(m.away);
-        if (!m.winner || m.invalidWinner) return;
         const winning=m.winner === m.home ? home : away;
         const losing=m.winner === m.home ? away : home;
         winning.wins++; losing.losses++; winning.played++; losing.played++;
