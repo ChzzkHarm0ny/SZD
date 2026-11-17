@@ -502,6 +502,42 @@
       return `<span class="league-race-other" title="${leagueEscape(raw)}">${leagueEscape(raw)}</span>`;
     }
 
+    // LEAGUE의 중계자 이름은 MEMBERS 시트의 방송국 링크와 연결합니다.
+    // 중계자 이름이 MEMBERS에 없거나 채널 정보가 비어 있으면 일반 텍스트로 표시합니다.
+    function leagueCasterChannelURL(member) {
+      const raw = String(member.chzzk_id || member.channel_id || member.chzzkId || member.방송국링크 || '').trim();
+      if (!raw) return '';
+      let channelId = raw;
+      if (/^https?:\/\//i.test(raw)) {
+        try {
+          const url = new URL(raw);
+          if (url.hostname.toLowerCase() !== 'chzzk.naver.com') return '';
+          const path = url.pathname.split('/').filter(Boolean);
+          channelId = path[0] === 'live' ? (path[1] || '') : (path[0] || '');
+        } catch (e) { return ''; }
+      } else {
+        channelId = raw.split(/[/?#]/).filter(Boolean).pop() || '';
+      }
+      if (!/^[a-z0-9_-]+$/i.test(channelId)) return '';
+      return `https://chzzk.naver.com/${encodeURIComponent(channelId)}`;
+    }
+
+    function leagueCasterMarkup(value) {
+      return String(value || '').split(/\s*[,，、;]\s*/).filter(Boolean).map(rawName => {
+        const name = leagueNormalizeName(rawName);
+        const member = (db.members || []).find(m =>
+          leagueNormalizeName(m.name || m.이름 || '') === name
+        );
+        const url = member ? leagueCasterChannelURL(member) : '';
+        if (!url) return `<span class="font-semibold">${leagueEscape(name)}</span>`;
+        return `<a href="${leagueEscape(url)}" target="_blank" rel="noopener noreferrer"
+                  aria-label="${leagueEscape(name)} 방송국 열기" title="${leagueEscape(name)} 치지직 방송국 바로가기"
+                  class="inline-flex items-center gap-1 font-semibold text-violet-200 hover:text-white hover:underline underline-offset-2 transition">
+                  <i class="fa-solid fa-tv text-[10px]" aria-hidden="true"></i>${leagueEscape(name)}
+                </a>`;
+      }).join('<span class="text-slate-500 mx-1">·</span>');
+    }
+
     function leagueRows() {
       const warnings = [];
       const result = [];
@@ -655,7 +691,7 @@
             ${m.caster?`<div class="flex items-start gap-1.5 border-t border-slate-700/80 pt-1.5 text-[11px] text-violet-200">
               <i class="fa-solid fa-tower-broadcast mt-0.5 text-violet-400" aria-hidden="true"></i>
               <span class="shrink-0 font-bold">중계</span>
-              <span class="min-w-0 break-all font-semibold">${leagueEscape(m.caster)}</span>
+              <span class="min-w-0 break-all">${leagueCasterMarkup(m.caster)}</span>
             </div>`:''}
             ${finished?`<div class="text-[10px] text-amber-300 border-t border-slate-700 pt-1.5">승자: <strong>${leagueEscape(m.winner)}</strong></div>`:''}
           </div>`;
