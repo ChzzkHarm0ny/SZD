@@ -75,6 +75,9 @@
     .league-day-card.league-today { border-color:#edb43f; box-shadow:0 0 0 1px rgba(237,180,63,.4),inset 0 0 16px rgba(237,180,63,.07); }
     .league-match-card { border:1px solid #344562; border-radius:11px; background:rgba(3,11,28,.73); padding:9px; }
     .league-match-card.league-match-done { border-color:rgba(251,191,36,.45); }
+    /* 경기마다 선택한 종족을 순위표가 아닌 대진표에만 표시 */
+    .league-race-icon { width:17px; height:17px; display:inline-block; object-fit:contain; flex-shrink:0; }
+    .league-race-other { display:inline-flex; align-items:center; justify-content:center; padding:0 4px; min-height:17px; border:1px solid #64748b; color:#cbd5e1; border-radius:4px; font-size:9px; flex-shrink:0; max-width:65px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     @media (max-width:640px) {
       .league-head { padding-top:23px; }
       .league-rank-table th { font-size:15px; }
@@ -433,9 +436,12 @@
 
 
     /* --------------------------------------------------------------
-       LEAGUE : LEAGUE 워크시트 / DATE, HOME, AWAY, WINNER
+       LEAGUE : LEAGUE 워크시트 / DATE, HOME, P1종족, AWAY, P2종족, WINNER, 중계
        한 줄 = 한 경기. 같은 두 선수는 홈/어웨이를 교환하여 두 경기.
        WINNER 공란 = 일정만 등록, 승/패/승점에는 아직 반영하지 않음.
+       중계 공란 = 중계 정보 표시를 생략 (결과 및 순위 계산과 무관).
+       P1종족은 HOME, P2종족은 AWAY의 해당 경기 종족입니다.
+       종족 공란 = 아이콘 생략. 순위표는 종족을 표기하지 않습니다.
        -------------------------------------------------------------- */
     function leagueEscape(value) {
       return String(value === undefined || value === null ? '' : value)
@@ -444,7 +450,7 @@
     }
 
     function leagueCell(row, name) {
-      const key = Object.keys(row || {}).find(k => k.replace(/^\uFEFF/, '').trim().toUpperCase() === name);
+      const key = Object.keys(row || {}).find(k => k.replace(/^\uFEFF/, '').trim().toUpperCase() === String(name).trim().toUpperCase());
       return key === undefined ? '' : String(row[key] == null ? '' : row[key]).trim();
     }
 
@@ -481,6 +487,21 @@
       return LEAGUE_NAME_ALIASES[name] || name;
     }
 
+    // 각 경기의 P1/P2 종족을 직접 읽습니다. 회원의 기본 종족으로 대체하지 않습니다.
+    // 지원 심볼: 기존 사이트에서 쓰던 테란/저그/프로토스 마크.
+    function leagueRaceMarkup(value) {
+      const raw = String(value == null ? '' : value).trim();
+      if (!raw) return '';
+      const race = raw.toLowerCase().replace(/\s+/g, '');
+      let label = '', src = '';
+      if (['t', 'terran', '테란'].includes(race)) { label='테란'; src=RACE_ICONS.terran; }
+      else if (['z', 'zerg', '저그'].includes(race)) { label='저그'; src=RACE_ICONS.zerg; }
+      else if (['p', 'protoss', '프로토스', '토스'].includes(race)) { label='프로토스'; src=RACE_ICONS.protoss; }
+      if (src) return `<img class="league-race-icon" src="${src}" alt="${label}" title="${label}" loading="lazy">`;
+      // 랜덤 및 사용자 지정 표기는 존재하지 않는 심볼을 추측하지 않고 글자로 표시합니다.
+      return `<span class="league-race-other" title="${leagueEscape(raw)}">${leagueEscape(raw)}</span>`;
+    }
+
     function leagueRows() {
       const warnings = [];
       const result = [];
@@ -489,7 +510,11 @@
         const dateRaw=leagueCell(row,'DATE');
         const home=leagueNormalizeName(leagueCell(row,'HOME'));
         const away=leagueNormalizeName(leagueCell(row,'AWAY'));
+        const homeRace=leagueCell(row,'P1종족');
+        const awayRace=leagueCell(row,'P2종족');
         const winnerRaw=leagueNormalizeName(leagueCell(row,'WINNER'));
+        // 중계 스트리머 이름. 경기 결과와 무관하게 주간 일정에서만 표시합니다.
+        const caster=leagueCell(row,'중계');
         // 날짜만 기재된 행, 빈 행, 입력 도중인 행은 조용히 건너뜁니다.
         // DATE / HOME / AWAY가 모두 있을 때에만 경기를 일정에 등록합니다.
         // WINNER는 비어 있어도 정상적인 예정 경기입니다.
@@ -516,7 +541,7 @@
             warnings.push(`${idx+2}행: WINNER는 HOME 또는 AWAY 선수명과 일치해야 합니다.`);
           }
         }
-        result.push({date, time, home, away, winner, invalidWinner, duplicate, index:idx});
+        result.push({date, time, home, away, homeRace, awayRace, winner, caster, invalidWinner, duplicate, index:idx});
       });
       return {matches:result, warnings};
     }
@@ -585,7 +610,7 @@
 
       const notice=document.getElementById('league-data-notice');
       const errors=[];
-      if (!leagueSheetLoaded) errors.push('기존 구글 스프레드시트에 LEAGUE 탭을 만들고 1행에 DATE, HOME, AWAY, WINNER를 입력하세요. 현재는 실제 경기 기록을 불러오지 못해 기본 참가자만 표시하고 있습니다.');
+      if (!leagueSheetLoaded) errors.push('기존 구글 스프레드시트의 LEAGUE 탭을 확인하세요. 필수 열은 DATE, HOME, AWAY, WINNER이며, P1종족, P2종족, 중계는 선택 입력입니다. 현재 실제 경기 기록을 불러오지 못했습니다.');
       if (warnings.length) errors.push(`입력 확인: ${warnings.length}건. ${warnings.slice(0,3).map(leagueEscape).join(' / ')}${warnings.length>3?' 외':''}`);
       notice.innerHTML=errors.join('<div class="mt-1"></div>');
       notice.classList.toggle('hidden',!errors.length);
@@ -624,9 +649,14 @@
               ${m.time?`<span class="text-slate-400">${leagueEscape(m.time)}</span>`:''}
             </div>
             <div class="space-y-1.5">
-              <div class="flex items-center gap-1 text-[11px] min-w-0"><span class="w-11 shrink-0 text-[9px] text-emerald-300 font-black">HOME</span><span class="min-w-0 font-bold text-slate-50 break-all ${finished&&m.winner===m.home?'text-amber-300':''}">${leagueEscape(m.home)}</span>${finished&&m.winner===m.home?'<i class="fa-solid fa-crown text-amber-400 text-[10px]"></i>':''}</div>
-              <div class="flex items-center gap-1 text-[11px] min-w-0"><span class="w-11 shrink-0 text-[9px] text-sky-300 font-black">AWAY</span><span class="min-w-0 font-bold text-slate-50 break-all ${finished&&m.winner===m.away?'text-amber-300':''}">${leagueEscape(m.away)}</span>${finished&&m.winner===m.away?'<i class="fa-solid fa-crown text-amber-400 text-[10px]"></i>':''}</div>
+              <div class="flex items-center gap-1 text-[11px] min-w-0"><span class="w-11 shrink-0 text-[9px] text-emerald-300 font-black">HOME</span>${leagueRaceMarkup(m.homeRace)}<span class="min-w-0 font-bold text-slate-50 break-all ${finished&&m.winner===m.home?'text-amber-300':''}">${leagueEscape(m.home)}</span>${finished&&m.winner===m.home?'<i class="fa-solid fa-crown text-amber-400 text-[10px]"></i>':''}</div>
+              <div class="flex items-center gap-1 text-[11px] min-w-0"><span class="w-11 shrink-0 text-[9px] text-sky-300 font-black">AWAY</span>${leagueRaceMarkup(m.awayRace)}<span class="min-w-0 font-bold text-slate-50 break-all ${finished&&m.winner===m.away?'text-amber-300':''}">${leagueEscape(m.away)}</span>${finished&&m.winner===m.away?'<i class="fa-solid fa-crown text-amber-400 text-[10px]"></i>':''}</div>
             </div>
+            ${m.caster?`<div class="flex items-start gap-1.5 border-t border-slate-700/80 pt-1.5 text-[11px] text-violet-200">
+              <i class="fa-solid fa-tower-broadcast mt-0.5 text-violet-400" aria-hidden="true"></i>
+              <span class="shrink-0 font-bold">중계</span>
+              <span class="min-w-0 break-all font-semibold">${leagueEscape(m.caster)}</span>
+            </div>`:''}
             ${finished?`<div class="text-[10px] text-amber-300 border-t border-slate-700 pt-1.5">승자: <strong>${leagueEscape(m.winner)}</strong></div>`:''}
           </div>`;
         }).join(''):'<p class="py-6 text-center text-xs text-slate-500">경기 없음</p>';
