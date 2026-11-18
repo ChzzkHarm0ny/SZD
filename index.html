@@ -27,6 +27,13 @@
     .race-protoss-text { color: #f59e0b !important; }
     .race-zerg-text { color: #ef4444 !important; }
 
+    /* 실제 탭 캡처 중에는 페이지 안의 마우스 포인터를 출력하지 않습니다.
+       완료/취소/실패 시 JS의 finally에서 이 클래스를 제거합니다. */
+    html.league-capture-no-cursor,
+    html.league-capture-no-cursor *,
+    html.league-capture-no-cursor *::before,
+    html.league-capture-no-cursor *::after { cursor: none !important; }
+
 
     /* 스진동 리그: 예시 이미지의 네이비 / 골드 테이블을 캐릭터 없이 재구성 */
     .league-board {
@@ -917,6 +924,13 @@
         if (!track || track.getSettings().displaySurface !== 'browser') {
           throw new Error('전체 화면 또는 창이 아닌 「이 탭」을 선택해 주세요.');
         }
+        // 브라우저가 지원하는 경우 캡처 스트림 자체에도 커서 제외를 요청합니다.
+        // 일부 Chromium 버전은 이 제약을 무시하므로 아래 CSS 처리도 함께 사용합니다.
+        if (navigator.mediaDevices.getSupportedConstraints?.().cursor && typeof track.applyConstraints === 'function') {
+          try { await track.applyConstraints({ cursor: 'never' }); } catch (_) { /* CSS 방식으로 대체 */ }
+        }
+        // 화면 공유가 시작된 즉시 커서를 숨겨 캡처 프레임에 포함되지 않게 합니다.
+        document.documentElement.classList.add('league-capture-no-cursor');
         video = document.createElement('video');
         video.muted = true;
         video.playsInline = true;
@@ -965,6 +979,8 @@
             : (error.message || '화면 캡처에 실패했습니다.'), true
         );
       } finally {
+        // 중단·취소·오류 상황에도 마우스 포인터를 반드시 복구합니다.
+        document.documentElement.classList.remove('league-capture-no-cursor');
         if (stream) stream.getTracks().forEach(track => track.stop());
         if (video) { video.pause(); video.srcObject = null; }
         button.innerHTML = originalLabel;
