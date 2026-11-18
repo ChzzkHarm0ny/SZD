@@ -75,6 +75,18 @@
     .league-rank-table .league-goal-minus { color:#fca5a5; }
     .league-rank-table .league-goal-even { color:#cbd5e1; }
     .league-empty-note { color:#b1c1d8; font-size:12px; text-align:center; padding:0 12px 18px; }
+    /* PNG 저장 전용: 실제 홈페이지 레이아웃은 바꾸지 않고 캡처 복사본만 선명하게 표시 */
+    .league-png-rank .league-head { padding:24px 24px 10px; }
+    .league-png-rank .league-banner-image { width:480px; max-width:480px; }
+    .league-png-rank .league-table-wrap { padding:6px 26px 18px; overflow:visible !important; }
+    .league-png-rank .league-rank-table { width:100%; min-width:0; border-spacing:0 9px; }
+    .league-png-rank .league-rank-table th { font-size:21px; padding:15px 10px; }
+    .league-png-rank .league-rank-table td { font-size:23px; height:73px; padding:10px 12px; }
+    .league-png-rank .league-rank-number { width:48px; height:48px; font-size:24px; }
+    .league-png-rank .league-rank-table .league-points { font-size:30px; }
+    .league-png-rank .league-empty-note { font-size:15px; line-height:1.5; padding:8px 24px 27px; }
+    .league-png-rank .league-rank-name { letter-spacing:-.025em; }
+
     .league-leader-card { border:1px solid rgba(230,175,64,.27); background:linear-gradient(125deg,rgba(40,52,76,.94),rgba(10,17,30,.96)); border-radius:18px; padding:19px 21px; }
     .league-day-card { border:1px solid #334155; background:linear-gradient(180deg,rgba(27,39,61,.9),rgba(12,19,32,.92)); border-radius:16px; padding:17px; min-height:188px; }
     .league-day-card.league-today { border-color:#edb43f; box-shadow:0 0 0 1px rgba(237,180,63,.4),inset 0 0 16px rgba(237,180,63,.07); }
@@ -785,16 +797,22 @@
       // Separate offscreen rendering surface so UI size, scrolling and active tab do not change.
       Object.assign(stage.style, {
         position: 'fixed', left: '-12000px', top: '0',
-        width: isRanking ? '1120px' : '1500px',
+        width: isRanking ? '1400px' : '1500px',
         zIndex: '-1', pointerEvents: 'none',
         color: '#f1f5f9', fontFamily: "'Pretendard', sans-serif",
         boxSizing: 'border-box'
       });
       if (isRanking) {
+        // 표 테두리/그림자가 이미지 가장자리에서 잘리지 않도록 여백을 둡니다.
+        Object.assign(stage.style, {
+          background: '#070f1e', padding: '26px',
+          boxSizing: 'border-box'
+        });
         const board = document.getElementById('league-ranking-export');
         if (!board) throw new Error('순위표가 없습니다.');
         const clone = board.cloneNode(true);
         clone.id = 'league-ranking-export-copy';
+        clone.classList.add('league-png-rank');
         clone.style.width = '100%';
         const tableWrap = clone.querySelector('.league-table-wrap');
         if (tableWrap) tableWrap.style.overflow = 'visible';
@@ -851,6 +869,7 @@
         // html2canvas handles CORS image fetching. Never taint the canvas.
         const canvas = await html2canvas(stage, {
           backgroundColor: isRanking ? '#090f1d' : '#0b0f19',
+          // HD PNG: 순위표는 여덟 개 열의 작은 글씨까지 읽을 수 있는 해상도로 저장합니다.
           scale: 2, useCORS: true, allowTaint: false,
           imageTimeout: 12000, logging: false,
           scrollX: 0, scrollY: 0,
@@ -863,7 +882,8 @@
               const wrap = cloned.querySelector('.league-table-wrap');
               if (wrap) wrap.style.overflow = 'visible';
             } else {
-              cloned.style.gridTemplateColumns = 'repeat(7, minmax(0, 1fr))';
+              // 4개 + 3개, 사용자가 선택한 주간 일정표 두 줄 구성 유지
+              cloned.style.gridTemplateColumns = 'repeat(4, minmax(0, 1fr))';
             }
           }
         });
