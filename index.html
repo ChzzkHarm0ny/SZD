@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
   <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     body { font-family: 'Pretendard', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
@@ -75,17 +74,6 @@
     .league-rank-table .league-goal-minus { color:#fca5a5; }
     .league-rank-table .league-goal-even { color:#cbd5e1; }
     .league-empty-note { color:#b1c1d8; font-size:12px; text-align:center; padding:0 12px 18px; }
-    /* PNG 저장 전용: 실제 홈페이지 레이아웃은 바꾸지 않고 캡처 복사본만 선명하게 표시 */
-    .league-png-rank .league-head { padding:24px 24px 10px; }
-    .league-png-rank .league-banner-image { width:480px; max-width:480px; }
-    .league-png-rank .league-table-wrap { padding:6px 26px 18px; overflow:visible !important; }
-    .league-png-rank .league-rank-table { width:100%; min-width:0; border-spacing:0 9px; }
-    .league-png-rank .league-rank-table th { font-size:21px; padding:15px 10px; }
-    .league-png-rank .league-rank-table td { font-size:23px; height:73px; padding:10px 12px; }
-    .league-png-rank .league-rank-number { width:48px; height:48px; font-size:24px; }
-    .league-png-rank .league-rank-table .league-points { font-size:30px; }
-    .league-png-rank .league-empty-note { font-size:15px; line-height:1.5; padding:8px 24px 27px; }
-    .league-png-rank .league-rank-name { letter-spacing:-.025em; }
 
     .league-leader-card { border:1px solid rgba(230,175,64,.27); background:linear-gradient(125deg,rgba(40,52,76,.94),rgba(10,17,30,.96)); border-radius:18px; padding:19px 21px; }
     .league-day-card { border:1px solid #334155; background:linear-gradient(180deg,rgba(27,39,61,.9),rgba(12,19,32,.92)); border-radius:16px; padding:17px; min-height:188px; }
@@ -262,9 +250,12 @@
       <div id="tab-league" class="tab-content hidden space-y-7">
         <div class="flex flex-wrap items-center justify-end gap-2">
           <button type="button" id="league-download-ranking" onclick="downloadLeaguePNG('ranking')" class="league-download-btn inline-flex items-center gap-2 rounded-lg border border-amber-500/50 bg-amber-500/15 px-4 py-2.5 text-xs font-bold text-amber-200 hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-wait">
-            <i class="fa-solid fa-camera" aria-hidden="true"></i> 순위표 PNG 저장
+            <i class="fa-solid fa-camera" aria-hidden="true"></i> 순위표 화면 캡처
           </button>
         </div>
+        <p id="league-capture-info" role="status" aria-live="polite" class="text-xs text-slate-400 text-right">
+          저장 버튼을 누른 뒤 공유 창에서 <strong class="text-amber-200">이 탭</strong>을 선택하세요. 화면에 표시된 모습 그대로 PNG로 저장합니다.
+        </p>
         <section id="league-ranking-export" aria-label="스진동 리그 순위표" class="league-board">
           <div class="league-head">
             <img class="league-banner-image"
@@ -292,7 +283,7 @@
             </div>
             <div class="flex flex-wrap gap-2 items-center">
               <button type="button" id="league-download-schedule" onclick="downloadLeaguePNG('schedule')" class="league-download-btn inline-flex items-center gap-2 rounded-lg border border-sky-500/40 bg-sky-500/15 px-3 py-2 text-xs font-bold text-sky-200 hover:bg-sky-500/25 disabled:opacity-50 disabled:cursor-wait">
-                <i class="fa-solid fa-camera" aria-hidden="true"></i> 일정표 PNG 저장
+                <i class="fa-solid fa-camera" aria-hidden="true"></i> 일정표 화면 캡처
               </button>
               <button type="button" onclick="changeLeagueWeek(-1)" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold hover:bg-slate-700" aria-label="이전 주 리그 일정"><i class="fa-solid fa-chevron-left mr-1"></i> 이전 주</button>
               <button type="button" onclick="changeLeagueWeek(0)" class="px-3 py-2 bg-amber-500/15 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold hover:bg-amber-500/25">이번 주</button>
@@ -780,123 +771,183 @@
       }).join('');
     }
 
-    /* 리그 순위표 / 일정표를 실제 화면 요소로부터 PNG로 내보냅니다.
-       좁은 모바일 화면에서도 이미지에서는 표 전체와 주간 4+3 일정 카드 두 줄을 출력합니다. */
+    /* Chrome / Edge 현재 탭의 실제 렌더링 결과를 촬영합니다.
+       html2canvas로 DOM을 복제하지 않으므로 그라데이션·글자·열 너비가 유지됩니다.
+       getDisplayMedia는 클릭 등 사용자의 직접 동작에서 호출되어야 합니다. */
     let leagueExportBusy = false;
     function leagueExportMessage(message, error = false) {
       const status = document.getElementById('league-export-status');
-      if (!status) return;
-      status.textContent = message;
-      status.className = error ? 'text-xs text-rose-300' : 'text-xs text-emerald-300';
-      status.hidden = !message;
+      const top = document.getElementById('league-capture-info');
+      for (const el of [status, top]) {
+        if (!el) continue;
+        el.textContent = message;
+        el.className = error
+          ? 'text-xs text-rose-300'
+          : 'text-xs text-emerald-300';
+        if (el.id === 'league-capture-info') el.classList.add('text-right');
+        el.hidden = !message;
+      }
     }
 
-    function leagueExportStage(type) {
-      const stage = document.createElement('div');
-      const isRanking = type === 'ranking';
-      // Separate offscreen rendering surface so UI size, scrolling and active tab do not change.
-      Object.assign(stage.style, {
-        position: 'fixed', left: '-12000px', top: '0',
-        width: isRanking ? '1400px' : '1500px',
-        zIndex: '-1', pointerEvents: 'none',
-        color: '#f1f5f9', fontFamily: "'Pretendard', sans-serif",
-        boxSizing: 'border-box'
-      });
-      if (isRanking) {
-        // 표 테두리/그림자가 이미지 가장자리에서 잘리지 않도록 여백을 둡니다.
-        Object.assign(stage.style, {
-          background: '#070f1e', padding: '26px',
-          boxSizing: 'border-box'
-        });
-        const board = document.getElementById('league-ranking-export');
-        if (!board) throw new Error('순위표가 없습니다.');
-        const clone = board.cloneNode(true);
-        clone.id = 'league-ranking-export-copy';
-        clone.classList.add('league-png-rank');
-        clone.style.width = '100%';
-        const tableWrap = clone.querySelector('.league-table-wrap');
-        if (tableWrap) tableWrap.style.overflow = 'visible';
-        stage.appendChild(clone);
+    // 탭 캡처 영상의 새 프레임을 기다려, 스크롤 이전 화면이 찍히지 않도록 합니다.
+    async function leagueWaitScreenshotFrame(video) {
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      if (typeof video.requestVideoFrameCallback === 'function') {
+        await Promise.race([
+          new Promise(resolve => video.requestVideoFrameCallback(() => resolve())),
+          new Promise(resolve => setTimeout(resolve, 500))
+        ]);
       } else {
-        const grid = document.getElementById('league-week-grid');
-        if (!grid) throw new Error('일정표가 없습니다.');
-        Object.assign(stage.style, {
-          background: '#0b0f19', padding: '28px',
-          borderRadius: '16px', border: '1px solid #334155'
-        });
-        const heading = document.createElement('div');
-        heading.style.cssText = 'margin-bottom:22px;';
-        const title = document.createElement('div');
-        title.textContent = '스진동 LEAGUE · 주간 경기 일정';
-        title.style.cssText = 'color:#f8fafc;font-size:30px;font-weight:900;margin-bottom:7px;';
-        const range = document.createElement('div');
-        range.textContent = document.getElementById('league-week-label')?.textContent || '';
-        range.style.cssText = 'color:#cbd5e1;font-size:17px;';
-        heading.append(title, range);
-        stage.appendChild(heading);
-        const week = grid.cloneNode(true);
-        week.id = 'league-week-grid-export-copy';
-        Object.assign(week.style, {
-          display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-          gap: '12px', width: '100%'
-        });
-        // Streamer links are readable in the exported image, but cannot be clicked in PNG.
-        stage.appendChild(week);
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
-      return stage;
+    }
+
+    function leagueCapturePNGBlob(canvas) {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('PNG 인코딩에 실패했습니다.')), 'image/png');
+      });
+    }
+
+    // 순위표가 화면에 모두 보이면 Chrome Region Capture가 DOM 요소 자체의 영역을 잘라 줍니다.
+    async function leagueCaptureNativeRegion(target, video, track) {
+      const cropTarget = await CropTarget.fromElement(target);
+      await track.cropTo(cropTarget);
+      await leagueWaitScreenshotFrame(video);
+      await leagueWaitScreenshotFrame(video);
+      if (!video.videoWidth || !video.videoHeight) throw new Error('캡처 영역 크기를 읽지 못했습니다.');
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    }
+
+    // 긴 일정표나 순위표도 실제 탭 화면에서 스크롤하며 순서대로 이어 붙입니다.
+    // 원본 요소의 CSS는 변경하거나 복제하지 않습니다.
+    async function leagueCaptureNativeScrolled(target, video) {
+      const scrollport = target.closest('main') || document.scrollingElement;
+      if (!scrollport) throw new Error('스크롤 영역을 확인할 수 없습니다.');
+      const savedScrollTop = scrollport.scrollTop;
+      const savedScrollLeft = scrollport.scrollLeft;
+      try {
+        const targetBefore = target.getBoundingClientRect();
+        const portBefore = scrollport.getBoundingClientRect();
+        scrollport.scrollTop += targetBefore.top - portBefore.top;
+        await leagueWaitScreenshotFrame(video);
+        const rect = target.getBoundingClientRect();
+        const port = scrollport.getBoundingClientRect();
+        // 현재 탭의 세로 스크롤은 이어 붙일 수 있지만, 좌우로 숨겨진 표는 먼저 화면 폭을 확보해야 합니다.
+        if (rect.left < Math.max(0, port.left) - 1 ||
+            rect.right > Math.min(innerWidth, port.right) + 1) {
+          throw new Error('표가 화면 가로 폭을 넘어갑니다. PC 화면을 넓히거나 브라우저 배율을 줄인 뒤 다시 시도해 주세요.');
+        }
+        const scaleX = video.videoWidth / innerWidth;
+        const scaleY = video.videoHeight / innerHeight;
+        if (!(scaleX > 0 && scaleY > 0)) throw new Error('현재 탭의 캡처 크기를 읽지 못했습니다.');
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(rect.width * scaleX);
+        canvas.height = Math.round(rect.height * scaleY);
+        if (!canvas.width || !canvas.height) throw new Error('캡처 크기가 올바르지 않습니다.');
+        const context = canvas.getContext('2d');
+        let completedCssY = 0;
+        for (let attempt = 0; attempt < 60; attempt++) {
+          await leagueWaitScreenshotFrame(video);
+          const r = target.getBoundingClientRect();
+          const p = scrollport.getBoundingClientRect();
+          const visibleTop = Math.max(r.top, p.top, 0);
+          const visibleBottom = Math.min(r.bottom, p.bottom, innerHeight);
+          const partStart = Math.max(visibleTop, r.top + completedCssY);
+          if (partStart > visibleBottom) throw new Error('일부 표 영역이 화면 밖에 있어 캡처할 수 없습니다.');
+          if (partStart - r.top > completedCssY + 2) {
+            throw new Error('스크롤 중 캡처할 수 없는 공간이 생겼습니다. 브라우저 배율을 낮춰 다시 시도해 주세요.');
+          }
+          const partHeight = visibleBottom - partStart;
+          if (partHeight > 0.5) {
+            const srcX = Math.max(0, Math.round(r.left * scaleX));
+            const srcY = Math.max(0, Math.round(partStart * scaleY));
+            const srcW = Math.min(video.videoWidth - srcX, Math.round(r.width * scaleX));
+            const srcH = Math.min(video.videoHeight - srcY, Math.round(partHeight * scaleY));
+            const dstY = Math.round((partStart - r.top) * scaleY);
+            const dstH = Math.min(canvas.height - dstY, Math.round(partHeight * scaleY));
+            if (srcW <= 0 || srcH <= 0 || dstH <= 0) throw new Error('캡처 영상의 영역 좌표가 올바르지 않습니다.');
+            context.drawImage(video, srcX, srcY, srcW, srcH, 0, dstY, canvas.width, dstH);
+            completedCssY = Math.min(r.height, visibleBottom - r.top);
+          }
+          if (completedCssY >= r.height - 1) return canvas;
+          const previousTop = scrollport.scrollTop;
+          scrollport.scrollTop += Math.max(90, scrollport.clientHeight - 36);
+          if (scrollport.scrollTop === previousTop) {
+            throw new Error('표 끝부분까지 화면을 이동할 수 없습니다. 브라우저를 최대화한 뒤 다시 시도해 주세요.');
+          }
+        }
+        throw new Error('캡처할 내용이 너무 깁니다.');
+      } finally {
+        scrollport.scrollTop = savedScrollTop;
+        scrollport.scrollLeft = savedScrollLeft;
+      }
     }
 
     async function downloadLeaguePNG(type) {
       if (leagueExportBusy) return;
       const isRanking = type === 'ranking';
       const button = document.getElementById(isRanking ? 'league-download-ranking' : 'league-download-schedule');
-      if (!button) return;
-      if (typeof html2canvas !== 'function') {
-        leagueExportMessage('이미지 저장 모듈을 불러오지 못했습니다. 연결 상태를 확인한 뒤 새로고침해 주세요.', true);
+      const target = document.getElementById(isRanking ? 'league-ranking-export' : 'league-week-grid');
+      if (!button || !target) return;
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        leagueExportMessage('이 브라우저는 직접 화면 캡처를 지원하지 않습니다. PC Chrome 또는 Edge에서 HTTPS 주소로 접속해 주세요.', true);
         return;
       }
+
       leagueExportBusy = true;
       const buttons = document.querySelectorAll('.league-download-btn');
       buttons.forEach(b => { b.disabled = true; });
-      const originalButtonHTML = button.innerHTML;
-      button.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> 이미지 생성 중...';
-      leagueExportMessage('PNG 이미지를 생성하고 있습니다.');
-      let stage;
+      const originalLabel = button.innerHTML;
+      button.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> 화면 선택 중...';
+      leagueExportMessage('공유 화면 선택창에서 반드시 이 사이트의 「이 탭」을 선택한 다음 공유를 눌러주세요.');
+
+      let stream = null;
+      let video = null;
       try {
-        stage = leagueExportStage(type);
-        document.body.appendChild(stage);
-        if (document.fonts?.ready) await document.fonts.ready;
-        // html2canvas handles CORS image fetching. Never taint the canvas.
-        const canvas = await html2canvas(stage, {
-          backgroundColor: isRanking ? '#090f1d' : '#0b0f19',
-          // HD PNG: 순위표는 여덟 개 열의 작은 글씨까지 읽을 수 있는 해상도로 저장합니다.
-          scale: 2, useCORS: true, allowTaint: false,
-          imageTimeout: 12000, logging: false,
-          scrollX: 0, scrollY: 0,
-          windowWidth: Math.max(window.innerWidth, 1700),
-          onclone: doc => {
-            const cloned = doc.getElementById(isRanking ? 'league-ranking-export-copy' : 'league-week-grid-export-copy');
-            if (!cloned) return;
-            if (isRanking) {
-              // Ensure no horizontal scrollbar clips the eight-column standings.
-              const wrap = cloned.querySelector('.league-table-wrap');
-              if (wrap) wrap.style.overflow = 'visible';
-            } else {
-              // 4개 + 3개, 사용자가 선택한 주간 일정표 두 줄 구성 유지
-              cloned.style.gridTemplateColumns = 'repeat(4, minmax(0, 1fr))';
-            }
-          }
+        // 반드시 클릭 핸들러에서 지체 없이 호출: 브라우저의 화면 공유 권한 요청.
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: 'browser' }, audio: false,
+          preferCurrentTab: true, selfBrowserSurface: 'include', surfaceSwitching: 'exclude'
         });
-        if (!canvas.width || !canvas.height) throw new Error('이미지 크기가 올바르지 않습니다.');
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-        if (!blob) throw new Error('PNG 변환에 실패했습니다.');
-        const date = isRanking ? leagueISODate(leagueSeoulToday()) : (
-          (() => {
-            const monday = leagueSeoulToday();
-            monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7) + leagueWeekOffset * 7);
-            return leagueISODate(monday);
-          })()
-        );
+        const track = stream.getVideoTracks()[0];
+        if (!track || track.getSettings().displaySurface !== 'browser') {
+          throw new Error('전체 화면 또는 창이 아닌 「이 탭」을 선택해 주세요.');
+        }
+        video = document.createElement('video');
+        video.muted = true;
+        video.playsInline = true;
+        video.srcObject = stream;
+        await video.play();
+        await leagueWaitScreenshotFrame(video);
+        const rect = target.getBoundingClientRect();
+        const port = (target.closest('main') || document.documentElement).getBoundingClientRect();
+        const fullyVisible = rect.top >= Math.max(0, port.top) &&
+          rect.bottom <= Math.min(innerHeight, port.bottom) &&
+          rect.left >= Math.max(0, port.left) &&
+          rect.right <= Math.min(innerWidth, port.right);
+        leagueExportMessage('화면에 보이는 표 영역을 PNG로 저장하고 있습니다.');
+        let canvas;
+        if (fullyVisible && typeof CropTarget !== 'undefined' && typeof CropTarget.fromElement === 'function' && typeof track.cropTo === 'function') {
+          // Chrome Region Capture: 선택한 탭의 해당 DOM 영역 픽셀을 그대로 저장합니다.
+          try {
+            canvas = await leagueCaptureNativeRegion(target, video, track);
+          } catch (error) {
+            throw new Error('순위표 영역 캡처에 실패했습니다. 공유 창에서 반드시 「이 탭」을 선택했는지 확인해 주세요. (' + error.message + ')');
+          }
+        } else {
+          // 화면에 전부 들어오지 않는 긴 표는 실제 화면을 스크롤하며 캡처합니다.
+          canvas = await leagueCaptureNativeScrolled(target, video);
+        }
+        const blob = await leagueCapturePNGBlob(canvas);
+        const date = isRanking ? leagueISODate(leagueSeoulToday()) : (() => {
+          const monday = leagueSeoulToday();
+          monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7) + leagueWeekOffset * 7);
+          return leagueISODate(monday);
+        })();
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
@@ -905,13 +956,18 @@
         anchor.click();
         anchor.remove();
         setTimeout(() => URL.revokeObjectURL(url), 60000);
-        leagueExportMessage(`${isRanking ? '순위표' : '일정표'} PNG 다운로드를 시작했습니다.`);
+        leagueExportMessage(`${isRanking ? '순위표' : '일정표'}를 화면 모습 그대로 PNG로 저장했습니다.`);
       } catch (error) {
-        console.error('League PNG export failed:', error);
-        leagueExportMessage('PNG 이미지 생성에 실패했습니다. 새로고침 후 다시 시도해 주세요.', true);
+        console.error('League native screenshot failed:', error);
+        leagueExportMessage(
+          error.name === 'NotAllowedError' || error.name === 'AbortError'
+            ? '화면 공유를 취소했습니다. 저장하려면 이 사이트의 「이 탭」을 선택해 주세요.'
+            : (error.message || '화면 캡처에 실패했습니다.'), true
+        );
       } finally {
-        if (stage) stage.remove();
-        button.innerHTML = originalButtonHTML;
+        if (stream) stream.getTracks().forEach(track => track.stop());
+        if (video) { video.pause(); video.srcObject = null; }
+        button.innerHTML = originalLabel;
         buttons.forEach(b => { b.disabled = false; });
         leagueExportBusy = false;
       }
