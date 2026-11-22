@@ -310,6 +310,29 @@
         </section>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="league-leader-cards" aria-label="리그 주요 기록"></div>
+
+        <div id="league-data-notice" class="hidden text-xs leading-6 text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3" role="status"></div>
+
+        <section class="space-y-4" aria-label="주간 리그 일정">
+          <div class="flex flex-wrap gap-3 items-end justify-between">
+            <div>
+              <h3 class="font-black text-white text-lg sm:text-xl flex items-center gap-2"><i class="fa-regular fa-calendar-days text-amber-400"></i> 이번 주 리그 일정</h3>
+              <p class="text-xs text-slate-400 mt-1" id="league-week-label">일정 읽는 중...</p>
+            </div>
+            <div class="flex flex-wrap gap-2 items-center">
+              <button type="button" id="league-download-schedule" onclick="downloadLeaguePNG('schedule')" class="league-download-btn inline-flex items-center gap-2 rounded-lg border border-sky-500/40 bg-sky-500/15 px-3 py-2 text-xs font-bold text-sky-200 hover:bg-sky-500/25 disabled:opacity-50 disabled:cursor-wait">
+                <i class="fa-solid fa-camera" aria-hidden="true"></i> 일정표 화면 캡처
+              </button>
+              <button type="button" onclick="changeLeagueWeek(-1)" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold hover:bg-slate-700" aria-label="이전 주 리그 일정"><i class="fa-solid fa-chevron-left mr-1"></i> 이전 주</button>
+              <button type="button" onclick="changeLeagueWeek(0)" class="px-3 py-2 bg-amber-500/15 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold hover:bg-amber-500/25">이번 주</button>
+              <button type="button" onclick="changeLeagueWeek(1)" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold hover:bg-slate-700" aria-label="다음 주 리그 일정">다음 주 <i class="fa-solid fa-chevron-right ml-1"></i></button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="league-week-grid"></div>
+          <p class="text-xs text-slate-500">홈 · 어웨이는 같은 상대와 서로 장소를 바꾸어 최대 2경기 진행합니다. 시간은 시트에 입력된 경우에만 표시합니다.</p>
+          <p id="league-export-status" role="status" aria-live="polite" class="text-xs text-slate-400" hidden></p>
+        </section>
+
         <!-- 리그 매치업 매트릭스: 한 칸 = HOME vs AWAY 한 경기 -->
         <section id="league-matchup-section" class="league-matchup-panel space-y-4" aria-label="선수별 리그 대진 현황">
           <div class="flex flex-wrap items-start justify-between gap-3">
@@ -360,28 +383,6 @@
             <div id="league-matchup-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
             <button type="button" id="league-matchup-more" class="hidden w-full sm:w-auto rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm font-semibold hover:bg-slate-700" onclick="leagueShowAllMatchups()">남은 목록 모두 보기</button>
           </div>
-        </section>
-
-        <div id="league-data-notice" class="hidden text-xs leading-6 text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3" role="status"></div>
-
-        <section class="space-y-4" aria-label="주간 리그 일정">
-          <div class="flex flex-wrap gap-3 items-end justify-between">
-            <div>
-              <h3 class="font-black text-white text-lg sm:text-xl flex items-center gap-2"><i class="fa-regular fa-calendar-days text-amber-400"></i> 이번 주 리그 일정</h3>
-              <p class="text-xs text-slate-400 mt-1" id="league-week-label">일정 읽는 중...</p>
-            </div>
-            <div class="flex flex-wrap gap-2 items-center">
-              <button type="button" id="league-download-schedule" onclick="downloadLeaguePNG('schedule')" class="league-download-btn inline-flex items-center gap-2 rounded-lg border border-sky-500/40 bg-sky-500/15 px-3 py-2 text-xs font-bold text-sky-200 hover:bg-sky-500/25 disabled:opacity-50 disabled:cursor-wait">
-                <i class="fa-solid fa-camera" aria-hidden="true"></i> 일정표 화면 캡처
-              </button>
-              <button type="button" onclick="changeLeagueWeek(-1)" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold hover:bg-slate-700" aria-label="이전 주 리그 일정"><i class="fa-solid fa-chevron-left mr-1"></i> 이전 주</button>
-              <button type="button" onclick="changeLeagueWeek(0)" class="px-3 py-2 bg-amber-500/15 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold hover:bg-amber-500/25">이번 주</button>
-              <button type="button" onclick="changeLeagueWeek(1)" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold hover:bg-slate-700" aria-label="다음 주 리그 일정">다음 주 <i class="fa-solid fa-chevron-right ml-1"></i></button>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="league-week-grid"></div>
-          <p class="text-xs text-slate-500">홈 · 어웨이는 같은 상대와 서로 장소를 바꾸어 최대 2경기 진행합니다. 시간은 시트에 입력된 경우에만 표시합니다.</p>
-          <p id="league-export-status" role="status" aria-live="polite" class="text-xs text-slate-400" hidden></p>
         </section>
       </div>
 
