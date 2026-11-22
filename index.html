@@ -93,6 +93,36 @@
     /* 경기마다 선택한 종족을 순위표가 아닌 대진표에만 표시 */
     .league-race-icon { width:17px; height:17px; display:inline-block; object-fit:contain; flex-shrink:0; }
     .league-race-other { display:inline-flex; align-items:center; justify-content:center; padding:0 4px; min-height:17px; border:1px solid #64748b; color:#cbd5e1; border-radius:4px; font-size:9px; flex-shrink:0; max-width:65px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* 리그 대진 현황: HOME(세로) x AWAY(가로), 각 방향당 최대 1경기 */
+    .league-matchup-panel { background:linear-gradient(145deg,rgba(21,34,55,.96),rgba(9,17,32,.98)); border:1px solid rgba(219,171,72,.38); border-radius:19px; padding:20px; }
+    .league-matchup-counter { border:1px solid #34445e; border-radius:12px; padding:13px 15px; background:rgba(4,12,27,.5); }
+    .league-matrix-wrap { overflow:auto; max-width:100%; border-radius:12px; border:1px solid #394760; background:#081324; }
+    .league-matchup-table { border-collapse:separate; border-spacing:3px; width:100%; min-width:1080px; table-layout:fixed; text-align:center; font-size:12px; }
+    .league-matchup-table th { background:#14243b; color:#e4e9f3; padding:11px 6px; height:50px; font-size:12px; font-weight:800; white-space:nowrap; }
+    .league-matchup-table thead th { position:sticky; top:0; z-index:2; }
+    .league-matchup-table tbody th { position:sticky; left:0; z-index:2; text-align:left; padding-left:12px; }
+    .league-matchup-table thead th:first-child { position:sticky; left:0; z-index:3; min-width:133px; width:133px; color:#fbd38d; }
+    .league-matchup-table td { height:65px; padding:0; background:#0d1b30; }
+    .league-matrix-cell { border:1px solid transparent; color:#cbd5e1; width:100%; min-height:64px; padding:8px 3px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:3px; border-radius:7px; cursor:pointer; transition:filter .15s, outline .15s; }
+    .league-matrix-cell:hover, .league-matrix-cell:focus-visible { filter:brightness(1.25); outline:2px solid #f6ca65; outline-offset:-2px; }
+    .league-matrix-cell strong { font-size:12px; font-weight:900; line-height:1.25; white-space:nowrap; }
+    .league-matrix-cell small { font-size:10px; color:inherit; opacity:.85; font-weight:600; }
+    .league-matrix-completed { color:#a7f3d0; background:#153d37; border-color:#256d56; }
+    .league-matrix-scheduled { color:#bae6fd; background:#183959; border-color:#2a628a; }
+    .league-matrix-unassigned { color:#9caaba; background:#172133; border:1px dashed #475569; }
+    .league-matrix-review { color:#fde68a; background:#4a381e; border-color:#a16207; }
+    .league-matrix-self { color:#64748b; background:#101827; font-size:20px; cursor:default; }
+    .league-matrix-dim { opacity:.28; }
+    .league-matrix-highlight { color:#fcd886 !important; background:#253450 !important; }
+    .league-matchup-filter { background:#111e32; color:#f1f5f9; border:1px solid #52617a; border-radius:9px; padding:9px 12px; min-width:150px; max-width:100%; font-size:13px; }
+    .league-matchup-item { background:rgba(8,20,40,.72); border:1px solid #34445e; border-radius:11px; padding:13px; }
+    .league-matchup-state { font-size:11px; border-radius:7px; padding:4px 7px; font-weight:800; white-space:nowrap; }
+    .league-matchup-state-completed { background:#154d40; color:#a7f3d0; }
+    .league-matchup-state-scheduled { background:#173f60; color:#bae6fd; }
+    .league-matchup-state-unassigned { background:#2a3547; color:#cbd5e1; }
+    .league-matchup-state-review { background:#594018; color:#fde68a; }
+    @media (max-width:640px) { .league-matchup-panel { padding:13px; } }
+
     @media (max-width:640px) {
       .league-head { padding-top:23px; }
       .league-rank-table th { font-size:15px; }
@@ -280,6 +310,58 @@
         </section>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="league-leader-cards" aria-label="리그 주요 기록"></div>
+        <!-- 리그 매치업 매트릭스: 한 칸 = HOME vs AWAY 한 경기 -->
+        <section id="league-matchup-section" class="league-matchup-panel space-y-4" aria-label="선수별 리그 대진 현황">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-table-cells text-amber-400" aria-hidden="true"></i> 전체 대진 현황</h3>
+              <p class="mt-1 text-sm text-slate-400">세로는 홈 선수, 가로는 어웨이 선수입니다. 한 쌍의 대결을 홈·어웨이 두 칸으로 구분합니다.</p>
+            </div>
+            <div class="text-xs text-slate-400">구글시트 LEAGUE 자동 연동</div>
+          </div>
+          <div id="league-matchup-counters" class="grid grid-cols-2 lg:grid-cols-4 gap-2" aria-live="polite"></div>
+          <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-slate-300" aria-label="대진 상태 범례">
+            <span><span class="text-emerald-300">●</span> 완료</span>
+            <span><span class="text-sky-300">●</span> 예정·결과 대기</span>
+            <span><span class="text-slate-400">○</span> 미편성</span>
+            <span><span class="text-amber-300">●</span> 결과 확인 필요</span>
+          </div>
+          <div class="league-matrix-wrap" tabindex="0" aria-label="홈 어웨이 맞대결 표, 좌우 스크롤 가능">
+            <table class="league-matchup-table" aria-label="전체 선수 홈 어웨이 대진 현황 표">
+              <thead id="league-matchup-head"></thead>
+              <tbody id="league-matchup-body"></tbody>
+            </table>
+          </div>
+          <p class="text-xs text-slate-400">각 칸을 클릭하면 해당 두 선수의 홈·어웨이 경기 기록을 확인할 수 있습니다. 자기 자신과의 경기는 집계하지 않습니다.</p>
+          <div id="league-matchup-selected" class="hidden rounded-xl border border-amber-500/30 bg-slate-950/60 p-4 space-y-3" aria-live="polite"></div>
+
+          <div class="border-t border-slate-700/80 pt-4 space-y-3">
+            <div class="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h4 class="font-black text-white text-lg">남은 매치업</h4>
+                <p id="league-matchup-list-count" class="text-xs text-slate-400 mt-1">남은 경기 집계 중...</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <label class="flex items-center gap-2 text-xs text-slate-300">선수
+                  <select id="league-matchup-player" class="league-matchup-filter" onchange="leagueUpdateMatchupFilters()"><option value="">전체 선수</option></select>
+                </label>
+                <label class="flex items-center gap-2 text-xs text-slate-300">상태
+                  <select id="league-matchup-status" class="league-matchup-filter" onchange="leagueUpdateMatchupFilters()">
+                    <option value="remaining">남은 경기 전체</option>
+                    <option value="unassigned">미편성만</option>
+                    <option value="scheduled">예정·결과 대기</option>
+                    <option value="review">결과 확인 필요</option>
+                    <option value="completed">완료된 경기</option>
+                    <option value="all">모든 경기</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div id="league-matchup-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+            <button type="button" id="league-matchup-more" class="hidden w-full sm:w-auto rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm font-semibold hover:bg-slate-700" onclick="leagueShowAllMatchups()">남은 목록 모두 보기</button>
+          </div>
+        </section>
+
         <div id="league-data-notice" class="hidden text-xs leading-6 text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3" role="status"></div>
 
         <section class="space-y-4" aria-label="주간 리그 일정">
@@ -660,6 +742,164 @@
       );
     }
 
+    /* 대진 매트릭스: 실제로 완료된 경우에만 '완료'. WINNER가 비면 일정만 등록된 상태. */
+    let leagueMatchupModel = null;
+    let leagueMatchupExpanded = false;
+    let leagueMatchupSelectedPair = null;
+    function leagueMatchupStatus(match) {
+      if (!match) return 'unassigned';
+      if (match.invalidWinner) return 'review';
+      if (match.winner) return 'completed';
+      return 'scheduled';
+    }
+    function leagueMatchupStatusText(status) {
+      return ({completed:'완료', scheduled:'예정', unassigned:'미편성', review:'결과 확인'})[status] || '';
+    }
+    function leagueMatchupKey(home, away) {
+      return `${home}\u001f${away}`;
+    }
+    function leagueMatchupDateLabel(match) {
+      if (!match || !match.date) return '';
+      const [,month,day] = match.date.split('-');
+      return `${Number(month)}/${Number(day)}${match.time ? ` ${match.time}` : ''}`;
+    }
+    function leagueMatchupRecord(home, away) {
+      const match=leagueMatchupModel && leagueMatchupModel.fixtures.get(leagueMatchupKey(home, away));
+      return {home, away, match, status:leagueMatchupStatus(match)};
+    }
+    function renderLeagueMatchups(matches, standings) {
+      const thead=document.getElementById('league-matchup-head');
+      if (!thead) return;
+      const names=standings.map(p=>p.name);
+      const fixtures=new Map();
+      matches.forEach(m => {
+        if (m.duplicate) return;
+        const key=leagueMatchupKey(m.home,m.away);
+        if (!fixtures.has(key)) fixtures.set(key,m);
+      });
+      leagueMatchupModel={names,fixtures};
+      const total=names.length*(names.length-1);
+      const counts={completed:0,scheduled:0,unassigned:0,review:0};
+      names.forEach(home=>names.forEach(away=>{
+        if(home===away) return;
+        counts[leagueMatchupStatus(fixtures.get(leagueMatchupKey(home,away))) ]++;
+      }));
+      document.getElementById('league-matchup-counters').innerHTML=[
+        ['전체 경기',total,'text-slate-100'],
+        ['완료',counts.completed,'text-emerald-300'],
+        ['예정·결과 대기',counts.scheduled,'text-sky-300'],
+        ['미편성',counts.unassigned,'text-slate-200']
+      ].map(([label,num,color])=>`<div class="league-matchup-counter"><div class="text-xs font-bold text-slate-400">${label}</div><div class="mt-1 text-2xl font-black tabular-nums ${color}">${num}<span class="text-xs text-slate-400 font-medium ml-1">경기</span></div></div>`).join('');
+      if (counts.review) document.getElementById('league-matchup-counters').insertAdjacentHTML('beforeend',
+        `<div class="league-matchup-counter col-span-2 lg:col-span-4 text-amber-200 text-xs">WINNER 입력을 확인해야 하는 경기 ${counts.review}건은 완료에 포함하지 않았습니다.</div>`);
+      const select=document.getElementById('league-matchup-player');
+      const oldValue=select.value;
+      select.innerHTML='<option value="">전체 선수</option>'+names.map(name=>`<option value="${leagueEscape(name)}">${leagueEscape(name)}</option>`).join('');
+      select.value=names.includes(oldValue)?oldValue:'';
+      leagueMatchupExpanded=false;
+      leagueRenderMatchupTable();
+      leagueRenderMatchupList();
+      if (leagueMatchupSelectedPair && names.includes(leagueMatchupSelectedPair[0]) && names.includes(leagueMatchupSelectedPair[1])) {
+        leagueShowPairDetails(leagueMatchupSelectedPair[0],leagueMatchupSelectedPair[1]);
+      } else {
+        leagueMatchupSelectedPair=null;
+        document.getElementById('league-matchup-selected').classList.add('hidden');
+      }
+    }
+    function leagueRenderMatchupTable() {
+      const model=leagueMatchupModel;
+      if (!model) return;
+      const names=model.names;
+      const selected=document.getElementById('league-matchup-player').value;
+      document.getElementById('league-matchup-head').innerHTML='<tr><th scope="col">HOME ↓ / AWAY →</th>'+names.map(name=>
+        `<th scope="col" class="${selected===name?'league-matrix-highlight':''}">${leagueEscape(name)}</th>`).join('')+'</tr>';
+      document.getElementById('league-matchup-body').innerHTML=names.map((home,i)=>{
+        const cells=names.map((away,j)=>{
+          if (home===away) return '<td><div class="league-matrix-cell league-matrix-self" aria-label="자기 자신">—</div></td>';
+          const {match,status}=leagueMatchupRecord(home,away);
+          const date=leagueMatchupDateLabel(match);
+          const mark=status==='completed'?'✓':status==='scheduled'?'◷':status==='review'?'!':'○';
+          const short=status==='completed'&&match.hasScore?`${match.homeScore}:${match.awayScore}`:
+            status==='scheduled'||status==='review'?date:'';
+          const faded=selected && selected!==home && selected!==away ?'league-matrix-dim':'';
+          return `<td><button type="button" class="league-matrix-cell league-matrix-${status} ${faded}" onclick="leagueShowPairByIndex(${i},${j})" aria-label="${leagueEscape(home)} 홈 ${leagueEscape(away)} 어웨이 ${leagueMatchupStatusText(status)}${date?' '+leagueEscape(date):''}">
+            <strong>${mark} ${leagueMatchupStatusText(status)}</strong>${short?`<small>${leagueEscape(short)}</small>`:''}
+          </button></td>`;
+        }).join('');
+        return `<tr><th scope="row" class="${selected===home?'league-matrix-highlight':''}">${leagueEscape(home)}</th>${cells}</tr>`;
+      }).join('');
+    }
+    function leagueShowPairByIndex(homeIndex,awayIndex) {
+      const names=leagueMatchupModel?.names || [];
+      if (!names[homeIndex] || !names[awayIndex] || homeIndex===awayIndex) return;
+      leagueShowPairDetails(names[homeIndex],names[awayIndex]);
+    }
+    function leagueShowPairDetails(a,b) {
+      leagueMatchupSelectedPair=[a,b];
+      const box=document.getElementById('league-matchup-selected');
+      const lines=[[a,b],[b,a]].map(([home,away])=>{
+        const {match,status}=leagueMatchupRecord(home,away);
+        const date=leagueMatchupDateLabel(match);
+        const score=match && match.hasScore && status==='completed' ? `${match.homeScore} : ${match.awayScore}` : '';
+        return `<div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/80 rounded-lg px-3 py-3 border border-slate-700/60">
+          <div class="min-w-0"><span class="text-emerald-300 text-xs font-bold">HOME</span> <strong>${leagueEscape(home)}</strong> <span class="text-slate-500">vs</span> <strong>${leagueEscape(away)}</strong> <span class="text-sky-300 text-xs font-bold">AWAY</span>
+            ${date?`<div class="text-xs text-slate-400 mt-1">${leagueEscape(match.date)}${match.time?' '+leagueEscape(match.time):''}</div>`:''}</div>
+          <div class="flex gap-2 items-center"><span class="league-matchup-state league-matchup-state-${status}">${leagueMatchupStatusText(status)}</span>${score?`<b class="text-amber-300">${score}</b>`:''}</div>
+        </div>`;
+      }).join('');
+      box.innerHTML=`<div class="flex items-center justify-between gap-2"><h4 class="font-black text-white">${leagueEscape(a)} ↔ ${leagueEscape(b)} 맞대결</h4><button type="button" class="text-slate-400 hover:text-white" onclick="leagueClosePairDetails()" aria-label="맞대결 상세 닫기"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${lines}</div>`;
+      box.classList.remove('hidden');
+    }
+    function leagueClosePairDetails() {
+      leagueMatchupSelectedPair=null;
+      const box=document.getElementById('league-matchup-selected');
+      box.classList.add('hidden');
+      box.innerHTML='';
+    }
+    function leagueUpdateMatchupFilters() {
+      leagueMatchupExpanded=false;
+      leagueRenderMatchupTable();
+      leagueRenderMatchupList();
+    }
+    function leagueShowAllMatchups() {
+      leagueMatchupExpanded=true;
+      leagueRenderMatchupList();
+    }
+    function leagueRenderMatchupList() {
+      const model=leagueMatchupModel;
+      if (!model) return;
+      const names=model.names;
+      const player=document.getElementById('league-matchup-player').value;
+      const statusFilter=document.getElementById('league-matchup-status').value;
+      const list=[];
+      names.forEach(home=>names.forEach(away=>{
+        if (home===away || (player && player!==home && player!==away)) return;
+        const item=leagueMatchupRecord(home,away);
+        if (statusFilter==='remaining' && item.status==='completed') return;
+        if (statusFilter!== 'remaining' && statusFilter!=='all' && item.status!==statusFilter) return;
+        list.push(item);
+      }));
+      // 결과 입력 확인 → 날짜가 있는 예정 경기 → 아직 편성되지 않은 경기 순서.
+      const sortOrder={review:0,scheduled:1,unassigned:2,completed:3};
+      list.sort((a,b)=>sortOrder[a.status]-sortOrder[b.status] ||
+        ((a.match?.date || '9999').localeCompare(b.match?.date || '9999')) ||
+        names.indexOf(a.home)-names.indexOf(b.home) || names.indexOf(a.away)-names.indexOf(b.away));
+      const shown=leagueMatchupExpanded?list:list.slice(0,12);
+      const stateLabel=statusFilter==='remaining'?'남은 경기':statusFilter==='all'?'전체 경기':leagueMatchupStatusText(statusFilter)+' 경기';
+      document.getElementById('league-matchup-list-count').textContent=`${player?`${player} 관련 `:''}${stateLabel} ${list.length}경기 · ${names.length}명 참가 · 두 선수당 홈/어웨이 각 1경기`;
+      document.getElementById('league-matchup-list').innerHTML=shown.length?shown.map(({home,away,match,status})=>{
+        const date=leagueMatchupDateLabel(match);
+        return `<div class="league-matchup-item flex flex-col gap-2">
+          <div class="flex justify-between gap-2"><span class="league-matchup-state league-matchup-state-${status}">${leagueMatchupStatusText(status)}</span><span class="text-xs text-slate-400">${date?leagueEscape(date):'날짜 미정'}</span></div>
+          <div class="text-sm font-bold text-white break-words"><span class="text-emerald-300 text-xs">HOME</span> ${leagueEscape(home)} <span class="text-slate-500 font-normal mx-1">vs</span> <span class="text-sky-300 text-xs">AWAY</span> ${leagueEscape(away)}</div>
+          ${status==='completed'&&match.hasScore?`<p class="text-xs text-slate-300">스코어 ${match.homeScore} : ${match.awayScore}</p>`:''}
+        </div>`;
+      }).join(''):'<div class="md:col-span-2 xl:col-span-3 text-slate-400 text-sm p-4 text-center rounded-xl border border-slate-700">해당하는 경기가 없습니다.</div>';
+      const more=document.getElementById('league-matchup-more');
+      more.classList.toggle('hidden',leagueMatchupExpanded || list.length<=12);
+      if (!leagueMatchupExpanded && list.length>12) more.textContent=`나머지 ${list.length-12}경기 더 보기`;
+    }
+
     function renderLeague() {
       const board=document.getElementById('league-standings-body');
       if (!board) return;
@@ -708,6 +948,7 @@
       if (warnings.length) errors.push(`입력 확인: ${warnings.length}건. ${warnings.slice(0,3).map(leagueEscape).join(' / ')}${warnings.length>3?' 외':''}`);
       notice.innerHTML=errors.join('<div class="mt-1"></div>');
       notice.classList.toggle('hidden',!errors.length);
+      renderLeagueMatchups(matches,players);
       renderLeagueWeek(matches);
     }
 
