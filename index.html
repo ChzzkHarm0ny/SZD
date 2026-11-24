@@ -484,9 +484,12 @@
     };
 
     let db = { members: [], schedules: [], historyMatch: [], weeklyYoutube: [], details: [], league: [] };
-    // 예시 순위표에 나온 9명을 0전 참가자로 등록. 시트에서 새 이름을 쓰면 자동 추가됩니다.
-    const LEAGUE_PLAYERS = ['망시', '고라니는똥손', '아모크', '고보미', '카루하', '찬울', '은송아지', '하늘루틴', '엄크술사'];
     const LEAGUE_SHEET_NAME = 'LEAGUE';
+    // A2:AZ2의 '리그참여자 이름' 오른쪽 목록이 순위표/대진표 참가자 명단의 기준입니다.
+    // LEAGUE 시트의 경기 헤더는 A4:...에 있습니다. 기존 9명 고정 배열은 사용하지 않습니다.
+    let leagueRoster = [];
+    let leagueRosterConfigured = false;
+    let leagueMatchFirstDataRow = 5;
     // 시트 약칭과 홈페이지 표기명을 하나의 선수로 합산
     const LEAGUE_NAME_ALIASES = { '고라니': '고라니는똥손', '찬율': '찬울', '은승아지': '은송아지' };
     const LEAGUE_WIN_POINTS = 3;
@@ -505,23 +508,25 @@
 
     async function loadData() {
       const fetchCSV = (sheet) => new Promise(res => {
-        Papa.parse(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheet}`, {
-          download: true, header: true, skipEmptyLines: true, 
+        Papa.parse(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`, {
+          download: true, header: true, skipEmptyLines: true,
           complete: r => {
-            // 헤더만 있는 빈 LEAGUE 시트도 정상 연결로 인식합니다.
-            if (sheet === LEAGUE_SHEET_NAME) {
-              const fields = (r.meta && r.meta.fields || []).map(k => String(k).replace(/^\uFEFF/, '').trim().toUpperCase());
-              leagueSheetLoaded = ['DATE', 'HOME', 'AWAY', 'WINNER'].every(k => fields.includes(k));
-            }
-            const validData = (r.data || []).filter(row => {
-              const keys = Object.keys(row);
-              if (keys.length === 0) return false;
-              const hasContent = keys.some(k => row[k] !== undefined && String(row[k]).trim() !== '');
-              return hasContent;
-            });
-            res(validData);
+            res((r.data || []).filter(row => Object.values(row || {}).some(v => v != null && String(v).trim() !== '')));
           },
           error: err => { console.warn(`Sheet ${sheet} could not be loaded`, err); res([]); }
+        });
+      });
+
+      // LEAGUE 시트는 2행이 참가자 명단, 4행이 경기 헤더이므로 서로 다른 범위로 읽습니다.
+      // headers=0은 이름 행을 헤더로 잘못 인식하는 문제를 막고,
+      // headers=1은 4행의 DATE/HOME/AWAY/WINNER를 실제 CSV 필드명으로 고정합니다.
+      // 이 방식은 2행의 텍스트와 5행 이후의 날짜값이 같은 열에 섞여 유실되는 문제도 방지합니다.
+      const fetchLeagueRange = (range, headerRows, csvHeader) => new Promise(res => {
+        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(LEAGUE_SHEET_NAME)}&range=${encodeURIComponent(range)}&headers=${headerRows}`;
+        Papa.parse(url, {
+          download: true, header: csvHeader, skipEmptyLines: false,
+          complete: r => res({rows:r.data || [], fields:r.meta?.fields || [], ok:true}),
+          error: err => { console.warn('LEAGUE range fetch failed', range, err); res({rows:[],fields:[],ok:false}); }
         });
       });
 
@@ -531,7 +536,35 @@
         db.historyMatch = await fetchCSV('Contents_History');
         db.weeklyYoutube = await fetchCSV('WEEKLY_YOUTUBE').catch(() => []);
         db.details = await fetchCSV('Match_Details');
-        db.league = await fetchCSV(LEAGUE_SHEET_NAME);
+
+        const [rosterCSV, fixturesCSV] = await Promise.all([
+          fetchLeagueRange('A2:AZ2', 0, false),
+          fetchLeagueRange('A4:Z', 1, true)
+        ]);
+        const rosterRow = rosterCSV.rows.find(row => Array.isArray(row) &&
+          row.some(cell => String(cell == null ? '' : cell).trim() === '리그참여자 이름'));
+        leagueRosterConfigured = !!rosterRow;
+        const rosterStart = rosterRow ? rosterRow.findIndex(cell => String(cell == null ? '' : cell).trim() === '리그참여자 이름') + 1 : 0;
+        leagueRoster = [...new Set((rosterRow || []).slice(rosterStart)
+          .map(name => leagueNormalizeName(name)).filter(Boolean))];
+
+        const fields = fixturesCSV.fields.map(k => String(k).replace(/^\uFEFF/, '').trim().toUpperCase());
+        leagueSheetLoaded = ['DATE', 'HOME', 'AWAY', 'WINNER'].every(name => fields.includes(name));
+        leagueMatchFirstDataRow = 5;
+        db.league = leagueSheetLoaded
+          ? fixturesCSV.rows.filter(row => Object.values(row || {}).some(v => v != null && String(v).trim() !== ''))
+          : [];
+        // 구버전 시트(A1이 헤더)도 사용할 수 있도록 데이터 구조가 달라진 경우만 복구합니다.
+        if (!leagueSheetLoaded) {
+          const oldHeader = await fetchLeagueRange('A1:Z', 1, true);
+          const oldFields = oldHeader.fields.map(k => String(k).replace(/^\uFEFF/, '').trim().toUpperCase());
+          if (['DATE', 'HOME', 'AWAY', 'WINNER'].every(name => oldFields.includes(name))) {
+            leagueSheetLoaded = true;
+            leagueMatchFirstDataRow = 2;
+            db.league = oldHeader.rows.filter(row => Object.values(row || {}).some(v => v != null && String(v).trim() !== ''));
+          }
+        }
+
 
         renderMembers();
         renderWeeklyWidget();
@@ -669,16 +702,16 @@
         // WINNER는 비어 있어도 정상적인 예정 경기입니다.
         if (!dateRaw || !home || !away) return;
         const date=leagueDateFromText(dateRaw);
-        const timeRaw=leagueCell(row,'TIME') || dateRaw;
+        const timeRaw=leagueCell(row,'시간(24h)') || leagueCell(row,'TIME') || leagueCell(row,'시간') || dateRaw;
         const matchTime=String(timeRaw).match(/(?:^|\s|T)([01]?\d|2[0-3]):([0-5]\d)(?:\b|$)/);
         const time=matchTime ? `${matchTime[1].padStart(2,'0')}:${matchTime[2]}` : '';
         if (!date || home === away) {
-          warnings.push(`${idx+2}행: 날짜가 잘못되었거나 HOME과 AWAY가 같은 선수입니다.`);
+          warnings.push(`${idx+leagueMatchFirstDataRow}행: 날짜가 잘못되었거나 HOME과 AWAY가 같은 선수입니다.`);
           return;
         }
         const key=`${home}\u001f${away}`;
         const duplicate=fixtures.has(key);
-        if (duplicate) warnings.push(`${idx+2}행: ${home} 홈 / ${away} 어웨이 경기가 중복되어 순위 계산에서 제외했습니다.`);
+        if (duplicate) warnings.push(`${idx+leagueMatchFirstDataRow}행: ${home} 홈 / ${away} 어웨이 경기가 중복되어 순위 계산에서 제외했습니다.`);
         fixtures.add(key);
         let winner='';
         let invalidWinner=false;
@@ -687,7 +720,7 @@
           else if (winnerRaw === away || ['AWAY','어웨이','A'].includes(winnerRaw.toUpperCase())) winner=away;
           else {
             invalidWinner=true;
-            warnings.push(`${idx+2}행: WINNER는 HOME 또는 AWAY 선수명과 일치해야 합니다.`);
+            warnings.push(`${idx+leagueMatchFirstDataRow}행: WINNER는 HOME 또는 AWAY 선수명과 일치해야 합니다.`);
           }
         }
         // 점수는 두 칸 모두 입력된 경우에만 유효합니다. 일방의 공란은 아직 입력 중인 것으로 간주합니다.
@@ -699,10 +732,10 @@
             homeScore=Number(homeScoreRaw);
             awayScore=Number(awayScoreRaw);
             if (winner && ((winner===home && homeScore<=awayScore) || (winner===away && awayScore<=homeScore))) {
-              warnings.push(`${idx+2}행: WINNER와 P1/P2스코어의 승패가 일치하지 않습니다. 입력값을 확인하세요.`);
+              warnings.push(`${idx+leagueMatchFirstDataRow}행: WINNER와 P1/P2스코어의 승패가 일치하지 않습니다. 입력값을 확인하세요.`);
             }
           } else {
-            warnings.push(`${idx+2}행: P1스코어와 P2스코어는 0 이상의 정수여야 합니다.`);
+            warnings.push(`${idx+leagueMatchFirstDataRow}행: P1스코어와 P2스코어는 0 이상의 정수여야 합니다.`);
           }
         }
         const hasScore=homeScore!==null && awayScore!==null;
@@ -711,17 +744,26 @@
       return {matches:result, warnings};
     }
 
+    function leagueActivePlayers(matches) {
+      // 명단이 존재하면 그 내용만 사용합니다(0경기 선수도 순위/대진표에 표시).
+      // 예전 시트에 명단 영역이 없는 경우에만 경기기록의 이름에서 참가자를 유추합니다.
+      if (leagueRosterConfigured) return leagueRoster;
+      return [...new Set(matches.flatMap(m => [m.home, m.away]))];
+    }
+
     function leagueStatistics(matches) {
       const players=new Map();
       const ensure=name => {
         if (!players.has(name)) players.set(name, {name, wins:0, losses:0, played:0, points:0, scored:0, conceded:0, difference:0, index:players.size});
         return players.get(name);
       };
-      LEAGUE_PLAYERS.forEach(ensure);
+      const roster=leagueActivePlayers(matches);
+      roster.forEach(ensure);
+      const active=new Set(roster);
       matches.forEach(m => {
-        // 결과가 입력된 정상 경기만 승패·승점·참여 횟수에 반영합니다.
-        // 결과가 없는 예정 경기는 하단 주간 일정에만 표시합니다.
-        if (m.duplicate || !m.winner || m.invalidWinner) return;
+        // 순위와 대진표의 집계 대상은 현재 참가자 명단에 속한 선수끼리의 경기입니다.
+        // 명단에서 제외된 선수의 과거 기록은 시트와 주간 일정에 그대로 남습니다.
+        if (m.duplicate || !m.winner || m.invalidWinner || !active.has(m.home) || !active.has(m.away)) return;
         const home=ensure(m.home), away=ensure(m.away);
         const winning=m.winner === m.home ? home : away;
         const losing=m.winner === m.home ? away : home;
@@ -779,6 +821,9 @@
         if (!fixtures.has(key)) fixtures.set(key,m);
       });
       leagueMatchupModel={names,fixtures};
+      // 참가자가 늘어나도 이름과 각 셀이 너무 좁아지지 않도록 가로 스크롤 폭을 조절합니다.
+      const matrix=document.querySelector('.league-matchup-table');
+      if (matrix) matrix.style.minWidth=`${Math.max(700, 150 + names.length*120)}px`;
       const total=names.length*(names.length-1);
       const counts={completed:0,scheduled:0,unassigned:0,review:0};
       names.forEach(home=>names.forEach(away=>{
@@ -918,11 +963,13 @@
           <td class="league-score-col ${p.difference>0?'league-goal-plus':p.difference<0?'league-goal-minus':'league-goal-even'}">${p.difference>0?'+':''}${p.difference}</td>
           <td class="league-points">${p.points}</td>
         </tr>`;
-      }).join('');
+      }).join('') || '<tr><td colspan="8" class="py-8 text-center text-slate-400">참가자 명단에 등록된 선수가 없습니다.</td></tr>';
 
-      const completed=matches.filter(m => m.winner && !m.duplicate).length;
+      const active=new Set(players.map(p => p.name));
+      const activeFixtures=matches.filter(m => !m.duplicate && active.has(m.home) && active.has(m.away));
+      const completed=activeFixtures.filter(m => m.winner && !m.invalidWinner).length;
       document.getElementById('league-points-note').textContent=
-        `승리 ${LEAGUE_WIN_POINTS}점 · 패배 ${LEAGUE_LOSS_POINTS}점 · 미진행 경기 0점 | 완료 ${completed}경기 / 등록 ${matches.filter(m=>!m.duplicate).length}경기 · 득실은 양쪽 스코어가 입력된 완료 경기만 합산`;
+        `참가자 ${players.length}명 · 승리 ${LEAGUE_WIN_POINTS}점 · 패배 ${LEAGUE_LOSS_POINTS}점 · 미진행 경기 0점 | 완료 ${completed}경기 / 등록 ${activeFixtures.length}경기 · 득실은 양쪽 스코어가 입력된 완료 경기만 합산`;
 
       const maxPoints=Math.max(0,...players.map(p=>p.points));
       const maxPlayed=Math.max(0,...players.map(p=>p.played));
@@ -945,7 +992,9 @@
 
       const notice=document.getElementById('league-data-notice');
       const errors=[];
-      if (!leagueSheetLoaded) errors.push('기존 구글 스프레드시트의 LEAGUE 탭을 확인하세요. 필수 열은 DATE, HOME, AWAY, WINNER이며, P1종족, P1스코어, P2종족, P2스코어, 중계는 선택 입력입니다. 현재 실제 경기 기록을 불러오지 못했습니다.');
+      if (!leagueSheetLoaded) errors.push('LEAGUE 탭의 4행에 경기 헤더 DATE, HOME, AWAY, WINNER가 있는지 확인하세요. 경기 데이터를 불러오지 못했습니다.');
+      if (leagueSheetLoaded && !leagueRosterConfigured) errors.push('참가자 명단을 찾을 수 없습니다. A2에 "리그참여자 이름"을 입력하고, B2부터 선수명을 적으세요. 현재는 경기 기록의 이름으로 임시 표시합니다.');
+      if (leagueRosterConfigured && !leagueRoster.length) errors.push('리그 참가자가 0명입니다. LEAGUE 탭의 B2부터 참가자 이름을 입력하세요.');
       if (warnings.length) errors.push(`입력 확인: ${warnings.length}건. ${warnings.slice(0,3).map(leagueEscape).join(' / ')}${warnings.length>3?' 외':''}`);
       notice.innerHTML=errors.join('<div class="mt-1"></div>');
       notice.classList.toggle('hidden',!errors.length);
